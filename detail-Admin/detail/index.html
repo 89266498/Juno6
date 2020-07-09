@@ -44,7 +44,12 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="index.html"><img src="img/logo.png"></a>
+            <a class="navbar-brand" href="index.html"><!-- <img src="img/juneng.png"> -->
+                <a href="#" class="dropdown-toggle hidden-xs hidden-sm" data-toggle="dropdown">
+                    Juno
+                    <b class="caret"></b>
+                </a>
+            </a>
         </div>
         <ul class="nav navbar-nav pull-right hidden-xs">
             <li class="hidden-xs hidden-sm">
@@ -105,30 +110,30 @@
                         <div class="messages">
                             <a href="#" class="item">
                                 <img src="img/contact-img.png" class="display" />
-                                <div class="name">DEMO</div>
+                                <div class="name">郭慧</div>
                                 <div class="msg">
-                                    回家来吃饭了.
+                                    把DO降下来。
                                 </div>
-                                <span class="time"><i class="icon-time"></i> 13分钟前.</span>
+                                <span class="time"><i class="icon-time"></i> 1天前.</span>
                             </a>
                             <a href="#" class="item">
                                 <img src="img/contact-img2.png" class="display" />
-                                <div class="name">Galván</div>
+                                <div class="name">姚海勇</div>
                                 <div class="msg">
-                                    照片很不错哦.
+                                    增加药剂投量。
                                 </div>
-                                <span class="time"><i class="icon-time"></i> 26分钟前.</span>
+                                <span class="time"><i class="icon-time"></i> 12天前.</span>
                             </a>
                             <a href="#" class="item last">
                                 <img src="img/contact-img.png" class="display" />
-                                <div class="name">后台</div>
+                                <div class="name">Juno</div>
                                 <div class="msg">
-                                   模版很不错赶紧下载.
+                                   预计接下来10天COD会增加。
                                 </div>
-                                <span class="time"><i class="icon-time"></i> 48分钟前.</span>
+                                <span class="time"><i class="icon-time"></i> 13天前.</span>
                             </a>
                             <div class="footer">
-                                <a href="#" class="logout">查看所有消息</a>
+                                <a href="#" class="logout">查看所有调控指令</a>
                             </div>
                         </div>
                     </div>
@@ -315,7 +320,7 @@
             <div class="row chart">
                 <div class="col-md-12">
                     <h4 class="clearfix">
-                        Statistics
+                        出水COD
                          <div class="btn-group pull-right">
                             <button class="glow left">日</button>
                             <button class="glow middle active">月</button>
@@ -598,12 +603,12 @@
             
 
             // jQuery Flot Chart
-            var visits = [[1, 50], [2, 40], [3, 45], [4, 23],[5, 55],[6, 65],[7, 61],[8, 70],[9, 65],[10, 75],[11, 57],[12, 59]];
-            var visitors = [[1, 25], [2, 50], [3, 23], [4, 48],[5, 38],[6, 40],[7, 47],[8, 55],[9, 43],[10,50],[11,47],[12, 39]];
+            var visits = [[1, 100], [2, 40], [3, 45], [4, 23],[5, 55],[6, 65],[7, 61],[8, 70],[9, 65],[10, 75],[11, 57],[12, 59]];
+            var visitors = [[1, 900], [2, 480], [3, 400], [4, 300],[5, 560],[6, 550],[7, 300],[8, 505],[9, 403],[10,500],[11,407],[12, 390]];
 
             var plot = $.plot($("#statsChart"),
-                [ { data: visits, label: "Signups"},
-                 { data: visitors, label: "Visits" }], {
+                [ { data: visits, label: "出水COD"},
+                 { data: visitors, label: "进水COD" }], {
                     series: {
                         lines: { show: true,
                                 lineWidth: 1,
@@ -628,7 +633,7 @@
                         },  
                     colors: ["#a7b5c5", "#30a0eb"],
                     xaxis: {
-                        ticks: [[1, "JAN"], [2, "FEB"], [3, "MAR"], [4,"APR"], [5,"MAY"], [6,"JUN"], 
+                        ticks: [[1, "一月"], [2, "FEB"], [3, "MAR"], [4,"APR"], [5,"MAY"], [6,"JUN"], 
                                [7,"JUL"], [8,"AUG"], [9,"SEP"], [10,"OCT"], [11,"NOV"], [12,"DEC"]],
                         font: {
                             size: 12,

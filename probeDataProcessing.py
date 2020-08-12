@@ -123,5 +123,13 @@ def readData(path=probeDataPath):
     print('Data extracted and formatted from sheet successfully ...')
     return formatted
 
+def frequentize(formattedData):
+    #TO DO: to add frequency configuration of data generation into each key (feature) for each process in formattedData
+    ...
+    
+def randomGenerateTimeSeries(fData):
+    #use various mathematical functions on frequency-configured Data to generate full-range Time Series, return Time-Series.
+    ...
+
 if __name__ == '__main__':
     result = readData()

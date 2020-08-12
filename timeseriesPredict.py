@@ -84,5 +84,5 @@ def readData(path):
     return data
 
 if __name__ == '__main__':
-    
-    data = readData(path / 'data' / 'data.txt') 
+     
+    data = readData(path / 'data' / 'data.txt')

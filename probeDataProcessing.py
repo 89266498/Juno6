@@ -110,17 +110,24 @@ def readData(path=probeDataPath):
             else:
                 formatted[row][key] = dc
     
+    formatted[14] = {'工艺处理阶段': '前段',
+                     '工艺段分类': '前段2#加药间',
+                     'processId': 14,
+                     '描述': np.nan,
+                     '乙酸钠（m3/h）': {'typical': -1000, 'range': [4.0, 0.0]},
+                     '液位(m)': {'typical': 4.0, 'range': [4.1, 0.5], 'freq': 5}}
+    
     formatted[22] = {'工艺处理阶段': '后段',
-                  '工艺段分类': '1#加药间',
-                  'processId': 23,
+                  '工艺段分类': '后段1#加药间',
+                  'processId': 22,
                   '描述': np.nan,
                   'PAC（m3/h）': {'typical': 2, 'range':[2.0, 0.0]},
                   '次氯酸钠（m3/h）': {'typical': 0.12, 'range':[0.12, 0.0]},
                   'PAM（m3/h）': {'typical': 1.5, 'range':[1.5, 0.0]}}
     
     formatted[23] = {'工艺处理阶段': '后段',
-                  '工艺段分类': '2#加药间',
-                  'processId': 24,
+                  '工艺段分类': '后段2#加药间',
+                  'processId': 23,
                   '描述': np.nan,
                   '乙酸钠（m3/h）': {'typical': 2, 'range': [2.0, 0.0]}}
     
@@ -141,6 +148,13 @@ def readData(path=probeDataPath):
     d[0] = {v.replace('\n',' '): d[0][v] for v in d[0]}
     #print(d[0])
     freqs = {feature: d[0][feature] for feature in features}
+    
+    for feature in freqs:
+        if isinstance(freqs[feature],str):
+            f = freqs[feature]
+            newf = int(np.mean([float(v) for v in f.split(' or ')]) / 10) * 10
+            freqs[feature] = newf
+    
     #print(freqs)
     #print(formatted)
     
@@ -158,16 +172,71 @@ def readData(path=probeDataPath):
     
     #sort result by processId
     sortedResult =  dict(sorted(result.items(), key=lambda item: item[1]['processId']))
-
+    fData = result
     #print(sortedResult.keys())
     print('Data extracted and formatted from sheet successfully ...')
-    return result, freqs
+    return fData, freqs
     
-def randomGenerateTimeSeries(fData):
+def randomGenerateTimeSeries(fData, freqs, days=300):
     #use various mathematical functions on frequency-configured Data to generate full-range Time Series, return Time-Series.
     
+    Freqs = sorted([v for v in list(set(freqs.values())) if v > 0])
+    #print(fs)
+    recordTimes = {}
+    for freq in Freqs:
+        totalMins = 60*24*days
+        recordTime = [a for a in range(totalMins) if a % freq ==0]
+        recordTimes[freq] = recordTime
     
+    features = list(freqs.keys())
+    timeSeries = {}
+    for i, process in enumerate(fData):
+        print(i,'/', len(fData)-1, 'Generating data for', process)
+        timeSeries[process] = {}
+        p = fData[process]
+        
+        for key in p:
+            #print('key',key)
+            #print(features)
+            if key in features:
+                #print('p',p)
+                feature = key
+                timeSeries[process][feature] = []
+                typical = p[feature]['typical']
+                rnge = p[feature]['range']
+                freq = p[feature]['freq']
+                
+                if max(rnge) < 0:
+                    rnge = None
+                if typical < 0:
+                    typical = None
+                
+                if not typical and not rnge:
+                    typical = int(random.random()*100)
+                    rnge = [0, 100]
+                
+                elif not typical and rnge:
+                    typical = np.random.uniform(min(rnge), max(rnge))
+                
+                elif not rnge and typical:
+                    rnge = [typical*1.5, typical*0.5]
+                
+                #Generate timeseries
+                for t in recordTimes[freq]:
+                    sigma = random.choice([1,2,3,4,7,10,20])
+                    x = np.clip(np.random.normal(typical, typical/3), min(rnge), max(rnge))
+                    d = (t, x)
+                    timeSeries[process][feature].append(d)
+                
+    #To do: embed some functional relationships into the data, morph the data   
+    print("writing generated data into 'timeSeries.json' ...")
+    with open(path / 'data' / 'fake-data' / 'timeSeries.json', 'w') as f:
+        f.write(json.dumps(timeSeries))
+    print('done.')
+    return timeSeries
     ...
 
 if __name__ == '__main__':
-    result, freqs = readData()
+    fData, freqs = readData()
+    ts = randomGenerateTimeSeries(fData, freqs, days=300)
+    

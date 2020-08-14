@@ -8,13 +8,14 @@ import time
 import pandas as pd
 
 path = Path('./')
-probeDataPath = path / 'data' / '数据指标整合_仪器与实验室20.08.11初稿.xlsx'
+probeDataPath = path / 'data' / '数据指标整合_仪器与实验室20.08.11-v3.0.xlsx'
 
 def readData(path=probeDataPath):
     df = pd.read_excel(probeDataPath, sheet_name=None)
     
     sheet2 = df['Sheet2']
     st = sheet2.transpose()
+    #print(st[0])
     d = {}
     for row in st:
         
@@ -23,6 +24,7 @@ def readData(path=probeDataPath):
     stage = d[0]['工艺处理阶段']
     tbr = []
     for r in d:
+ 
         #print('stage',stage)
         if str(d[r]['工艺处理阶段']) == 'nan':
             if str(d[r]['工艺段分类']) != 'nan':
@@ -35,6 +37,7 @@ def readData(path=probeDataPath):
     for i in tbr:
         d.pop(i)
     #print(d)
+    features = []
     result = {}
     for i in d:
         #print('i',i)
@@ -55,6 +58,7 @@ def readData(path=probeDataPath):
                     key = col
 
                     K = key.replace('\n', ' ')
+                    features.append(K)
                     result[i][K] = {}
                     result[i][K]['typical'] = str(row[key]).strip()
                     # else:
@@ -106,7 +110,7 @@ def readData(path=probeDataPath):
             else:
                 formatted[row][key] = dc
     
-    result[22] = {'工艺处理阶段': '后段',
+    formatted[22] = {'工艺处理阶段': '后段',
                   '工艺段分类': '1#加药间',
                   'processId': 23,
                   '描述': np.nan,
@@ -114,22 +118,56 @@ def readData(path=probeDataPath):
                   '次氯酸钠（m3/h）': {'typical': 0.12, 'range':[0.12, 0.0]},
                   'PAM（m3/h）': {'typical': 1.5, 'range':[1.5, 0.0]}}
     
-    result[23] = {'工艺处理阶段': '后段',
+    formatted[23] = {'工艺处理阶段': '后段',
                   '工艺段分类': '2#加药间',
                   'processId': 24,
                   '描述': np.nan,
                   '乙酸钠（m3/h）': {'typical': 2, 'range': [2.0, 0.0]}}
+    
+    ######################
+    ##Extract Frequency Data
+    sheetFreq = df['Freq']
+    st = sheetFreq.transpose()
+    #print(st[0])
+    d = {}
+    for row in st:
+        d[row] = dict(st[row])
+    
+    features = [feature.strip().replace('\n',' ') for feature in list(d[0].keys())]
+    features.remove('检测指标')
+    #features = list(set(features))
+    #print(features)
+    #print(d[0])
+    d[0] = {v.replace('\n',' '): d[0][v] for v in d[0]}
+    #print(d[0])
+    freqs = {feature: d[0][feature] for feature in features}
+    #print(freqs)
+    #print(formatted)
+    
+    for process in formatted:
+        
+        for feature in features:
+            if feature in process.keys():
+                process[feature]['freq'] = freqs[feature]
+    
+    result = {}
+    for process in formatted:
+        processName = process['工艺段分类']
+        process.pop('工艺段分类')
+        result[processName] = process
+    
+    #sort result by processId
+    sortedResult =  dict(sorted(result.items(), key=lambda item: item[1]['processId']))
 
+    #print(sortedResult.keys())
     print('Data extracted and formatted from sheet successfully ...')
-    return formatted
-
-def frequentize(formattedData):
-    #TO DO: to add frequency configuration of data generation into each key (feature) for each process in formattedData
-    ...
+    return result, freqs
     
 def randomGenerateTimeSeries(fData):
     #use various mathematical functions on frequency-configured Data to generate full-range Time Series, return Time-Series.
+    
+    
     ...
 
 if __name__ == '__main__':
-    result = readData()
+    result, freqs = readData()

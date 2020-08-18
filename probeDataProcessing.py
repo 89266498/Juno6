@@ -224,7 +224,7 @@ def randomGenerateTimeSeries(fData, freqs, days=300):
                 #Generate timeseries
                 for t in recordTimes[freq]:
                     sigma = random.choice([1,2,3,4,7,10,20])
-                    x = np.clip(np.random.normal(typical, typical/3), min(rnge), max(rnge))
+                    x = np.round(np.clip(np.random.normal(typical, typical/sigma), min(rnge), max(rnge)),2)
                     d = (t, x)
                     timeSeries[process][feature].append(d)
                 

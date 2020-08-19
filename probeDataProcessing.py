@@ -6,7 +6,7 @@ import json
 import os
 import time
 import pandas as pd
-
+import matplotlib.pyplot as plt
 path = Path('./')
 probeDataPath = path / 'data' / '数据指标整合_仪器与实验室20.08.11-v3.0.xlsx'
 
@@ -157,13 +157,17 @@ def readData(path=probeDataPath):
     
     #print(freqs)
     #print(formatted)
-    
+    featureList = []
+    i = 0
     for process in formatted:
         
         for feature in features:
             if feature in process.keys():
                 process[feature]['freq'] = freqs[feature]
-    
+                process[feature]['featureId'] = i
+                featureList.append({'process': process['工艺段分类'], 'feature': feature, 'featureId': i, 'processId': process['processId']})
+                i+=1
+            
     result = {}
     for process in formatted:
         processName = process['工艺段分类']
@@ -175,7 +179,7 @@ def readData(path=probeDataPath):
     fData = result
     #print(sortedResult.keys())
     print('Data extracted and formatted from sheet successfully ...')
-    return fData, freqs
+    return fData, freqs, featureList
     
 def randomGenerateTimeSeries(fData, freqs, days=300):
     #use various mathematical functions on frequency-configured Data to generate full-range Time Series, return Time-Series.
@@ -222,21 +226,72 @@ def randomGenerateTimeSeries(fData, freqs, days=300):
                     rnge = [typical*1.5, typical*0.5]
                 
                 #Generate timeseries
-                for t in recordTimes[freq]:
-                    sigma = random.choice([1,2,3,4,7,10,20])
-                    x = np.round(np.clip(np.random.normal(typical, typical/sigma), min(rnge), max(rnge)),2)
-                    d = (t, x)
-                    timeSeries[process][feature].append(d)
+                sigma = random.choice([3,4,7,10,20])
+                period1 = np.abs(np.random.normal(400000, 200000))
+                phase1 = 500000*random.random() 
+                
+                period2 = np.abs(np.random.normal(100000, 50000))
+                phase2 = 50000*random.random() 
+                
+                period3 = np.abs(np.random.normal(50000, 10000))
+                phase3 = 50000*random.random() 
+                
+                if typical == 0:
+                    typical = 0.1
+                            
+                if random.random() > 0.8:
+                    for t in recordTimes[freq]:
+                        x = np.abs(np.round(np.clip(np.random.normal(typical, typical*0.5/sigma), min(rnge), max(rnge)),2))
+                        d = (t, x)
+                        timeSeries[process][feature].append(d)
+                else:
+                    for t in recordTimes[freq]:
+                        x = np.round(np.clip(np.random.normal(typical, typical*0.5/sigma) + np.random.normal(typical*0.3, typical*0.03)*(np.sin(2*np.pi*t/period1 + phase1)) + np.random.normal(typical*0.1, typical*0.01)*(np.sin(2*np.pi*t/period2 + phase2)) + np.random.normal(typical*0.05, typical*0.001)*(np.sin(2*np.pi*t/period3 + phase3)), min(rnge), max(rnge)),2)
+                        d = (t, x)
+                        timeSeries[process][feature].append(d)
+                        
+                    
                 
     #To do: embed some functional relationships into the data, morph the data   
     print("writing generated data into 'timeSeries.json' ...")
     with open(path / 'data' / 'fake-data' / 'timeSeries.json', 'w') as f:
         f.write(json.dumps(timeSeries))
     print('done.')
+    
     return timeSeries
     ...
+    
+    
+    
+    
+def readTimeSeries():
+    print('reading time series data...')
+    with open(path / 'data' / 'fake-data' / 'timeSeries.json', 'r') as f:
+        timeSeries = json.loads(f.read())
+    return timeSeries
+
+def embedRel(inFids, outFid, funcs):
+    ...
+
+
+###########################################################
+
 
 if __name__ == '__main__':
-    fData, freqs = readData()
-    ts = randomGenerateTimeSeries(fData, freqs, days=300)
+    fData, freqs, featureList = readData()
+    #ts = randomGenerateTimeSeries(fData, freqs, days=300)
+    ts = readTimeSeries()
     
+    randomFeature = random.choice(featureList)
+    feature = randomFeature['feature']
+    process = randomFeature['process']
+    print(process, feature)
+    
+    d = ts[process][feature]
+    y = [d[1] for d in d]
+    x = [d[0] for d in d]
+    np.min(y)
+    plt.plot(x,y)
+    plt.axhline(y=0)
+    plt.show()
+    ...

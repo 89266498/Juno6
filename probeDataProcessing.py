@@ -260,8 +260,7 @@ def randomGenerateTimeSeries(fData, freqs, days=300):
     
     return timeSeries
     ...
-    
-    
+
     
     
 def readTimeSeries():
@@ -270,7 +269,18 @@ def readTimeSeries():
         timeSeries = json.loads(f.read())
     return timeSeries
 
-def embedRel(inFids, outFid, funcs):
+def embedRel(timeSeries, inFids, outFid, funcs, fData, freqs, featureList):
+    #this only embeds ONE particular relationship.
+    #inFids = [ fids of input features]
+    #outFid = fid of output feature
+    #fData contains information about the bounds of features to be clipped when exceeded.
+    #freqs contains frequency of data generation
+    #timeSeries is where we look for inFids and outFid as sources and destination.
+    #featureList is a fid-lookup dictionary.
+    #funcs are functions stacked together in a particular order. In particular, it's a stack of tanhs functions. In theory, almost all smooth functions of two inflexion points can be approximated by two tanhs functions.
+    funcsPool = ['tanh']
+    #binOpsPool = ['add', 'sub'
+    
     ...
 
 
@@ -288,8 +298,8 @@ if __name__ == '__main__':
     print(process, feature)
     
     d = ts[process][feature]
-    y = [d[1] for d in d]
-    x = [d[0] for d in d]
+    y = [d[1] for d in d][:100]
+    x = [d[0] for d in d][:100]
     np.min(y)
     plt.plot(x,y)
     plt.axhline(y=0)

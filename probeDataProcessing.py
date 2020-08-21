@@ -278,8 +278,11 @@ def embedRel(timeSeries, inFids, outFid, funcs, fData, freqs, featureList):
     #timeSeries is where we look for inFids and outFid as sources and destination.
     #featureList is a fid-lookup dictionary.
     #funcs are functions stacked together in a particular order. In particular, it's a stack of tanhs functions. In theory, almost all smooth functions of two inflexion points can be approximated by two tanhs functions.
-    funcsPool = ['tanh']
-    #binOpsPool = ['add', 'sub'
+    
+    outFeature = [feature for feature in featureList if feature['featureId'] == outFid][0]
+    inFeatures = [feature for feature in featureList if feature['featureId'] in inFids]
+    
+    #params = 
     
     ...
 
@@ -305,3 +308,6 @@ if __name__ == '__main__':
     plt.axhline(y=0)
     plt.show()
     ...
+    
+    inFids = [5, 8, 21]
+    outFid = 25

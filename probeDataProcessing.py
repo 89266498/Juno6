@@ -282,9 +282,17 @@ def embedRel(timeSeries, inFids, outFid, funcs, fData, freqs, featureList):
     outFeature = [feature for feature in featureList if feature['featureId'] == outFid][0]
     inFeatures = [feature for feature in featureList if feature['featureId'] in inFids]
     
-    #params = 
+    outProcess = ts['process']
+    outFea = ts['feature']
+    print('fdata',fData[outProcess])
+    y = fData[outProcess][outFea]
+    
+    #get inputFeatures and outputFeature ranges
+    # for inFeature in inFeatures:
+    #     x = 
     
     ...
+    return y
 
 
 ###########################################################
@@ -310,4 +318,5 @@ if __name__ == '__main__':
     ...
     
     inFids = [5, 8, 21]
-    outFid = 25
+    outFid = 18
+    y = embedRel(ts, inFids, outFid, funcs=None, fData=fData, freqs=freqs, featureList=featureList)

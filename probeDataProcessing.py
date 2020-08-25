@@ -420,16 +420,21 @@ def train(timeSeries_train, inFids, outFid):
     maxT = max([x[-1][0] for x in X])
     print('maxT',maxT)
     zxs = []
-    for px in pxs:
-        zxs.append([px[t] for t in range(0,maxT, 5)])
+    
+    for t in range(0,maxT, 5):
+        zx = [px(t) for px in pxs]
+        zxs.append(zx)
+    
     zy = [py[t] for t in range(0,maxT, 5)]
     
     #To FIX:
+    print('Training model...')
     reg = LinearRegression().fit(np.array(zxs), zy)
     
-    xs = [[px(t) for t in range(0,maxT, 5)] for px in pxs]
+    xs = [[px(t)  for px in pxs] for t in range(0,maxT, 5)]
+    print('Predicting output...')
     ys = reg.predict(xs)
-    plt.plot(range(0,maxT, 5), ys)
+    plt.plot(ys)
     plt.show()
     
     

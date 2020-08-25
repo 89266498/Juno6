@@ -7,6 +7,8 @@ import os
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+
 path = Path('./')
 probeDataPath = path / 'data' / '数据指标整合_仪器与实验室20.08.11-v3.0.xlsx'
 
@@ -278,23 +280,163 @@ def embedRel(timeSeries, inFids, outFid, funcs, fData, freqs, featureList):
     #timeSeries is where we look for inFids and outFid as sources and destination.
     #featureList is a fid-lookup dictionary.
     #funcs are functions stacked together in a particular order. In particular, it's a stack of tanhs functions. In theory, almost all smooth functions of two inflexion points can be approximated by two tanhs functions.
-    
+    print('Synchronizing time domain...')
     outFeature = [feature for feature in featureList if feature['featureId'] == outFid][0]
     inFeatures = [feature for feature in featureList if feature['featureId'] in inFids]
     
-    outProcess = ts['process']
-    outFea = ts['feature']
-    print('fdata',fData[outProcess])
-    y = fData[outProcess][outFea]
+    outProcess = outFeature['process']
+    outFea = outFeature['feature']
+    
+    y = timeSeries[outProcess][outFea]
+    X = []
+    
+    for inFeature in inFeatures:
+        inProcess = inFeature['process']
+        inFea = inFeature['feature']
+        x = timeSeries[inProcess][inFea]
+        X.append(x)
     
     #get inputFeatures and outputFeature ranges
     # for inFeature in inFeatures:
     #     x = 
+    # square = lambda x: x**2
+    # linear = lambda x: x
+    # gauss = lambda x: np.exp(-x**2)
+    # inverse = lambda x: 1/x
+    # exp = lambda x: np.exp(x)
+    # log = lambda x: np.log(x)
+    #tanh = lambda x: np.tanh(x)
+    T = [] 
+    for x in X:
+        T += [d[0] for d in x]
     
+    T = sorted(list(set(T))) #common timestamp
+    cT = []
+    inXs = []
+    for t,dy in y:
+        #print(t)
+        if t in T:
+            inX = []
+            for x in X:
+                for dt, dx in x:
+                    if t == dt:
+                        inX.append(dx)
+            if len(inX) == len(X):
+                inXs.append(inX)
+                cT.append(t)
+                
+    # print(inXs)
+    # print('cT', cT)
+    print('Normalizing inputs and output...')
+    ys = [dy[1] for dy in y]
+    miu = np.mean(ys)
+    sigma = np.std(ys) + miu/10
+    
+    mius = np.mean(inXs, axis=0)
+    sigmas = np.std(inXs, axis=0) + mius/10
+    
+    print(mius, sigmas)
+    
+    print('Randomizing parameters for underlying relationship...')
+    params1 = np.random.uniform(-1,1,len(X))
+    params2 = np.random.uniform(-1,1,len(X))
+    params3 = np.random.uniform(-1,1,2)
+    zs = []
+    print('Generating underlying relationship...')
+    for dx in inXs:
+        z = np.tanh(np.dot(params3, (np.tanh(np.dot(params1, (dx-mius)/sigmas)) , np.tanh(np.dot(params2, (dx-mius)/sigma)))))
+        zs.append(z)
+    zs = np.array(zs)
+    #print('z',zs)
+    resY = np.abs(zs*sigma + np.random.normal(miu, miu/10))
+    
+    
+    print('Embedding generated relationship back into original time series...')
+    currentY = resY[0]
+    outY = []
+    for t,dy in y:
+        #print(t)
+        if t in cT:
+            ind = cT.index(t)
+            outY.append([t,resY[ind]])
+            currentY = resY[ind]
+        else:
+            outY.append([t,np.abs(np.random.normal(currentY, currentY/30))])
+            currentY = currentY
+    
+    resY = [z[1] for z in outY]
+    T = [d[0] for d in y]
+    
+    plt.scatter(T, resY, s=1)
+    plt.plot(T,resY, linewidth=0.1)
+    plt.show()
+    #timeSeries
+    #print(outY)
+    timeSeries[outProcess][outFea] = outY
     ...
-    return y
+    print("[SUCCESS] Data generation done with random relationship embedded.")
+    return timeSeries
 
-
+def train(timeSeries_train, inFids, outFid):
+    print("Pulling inputs and output data from time series...")
+    outFeature = [feature for feature in featureList if feature['featureId'] == outFid][0]
+    inFeatures = [feature for feature in featureList if feature['featureId'] in inFids]
+    
+    outProcess = outFeature['process']
+    outFea = outFeature['feature']
+    
+    y = timeSeries[outProcess][outFea]
+    X = []
+    
+    for inFeature in inFeatures:
+        inProcess = inFeature['process']
+        inFea = inFeature['feature']
+        x = timeSeries[inProcess][inFea]
+        X.append(x)
+    
+    print('Synchronizing multiple time series...')
+    T = [] 
+    for x in X:
+        T += [d[0] for d in x]
+    T += [d[0] for d in y]
+    T = sorted(list(set(T))) #common timestamp in X
+    
+    resY = []
+    resX = []
+    print('Polynomial fitting output y...')
+    py = np.poly1d(np.polyfit([y[0] for y in y],[y[1] for y in y],50))
+    plt.plot([py(i) for i in range(420000)], linewidth=2, color='blue')
+    plt.show()
+    print('Polynomial fitting input Xs...')
+    
+    pxs = []
+    for x in X:
+        px = np.poly1d(np.polyfit([x[0] for x in x],[x[1] for x in x],50))
+        pxs.append(px)
+        plt.scatter([x[0] for x in x],[x[1] for x in x], color='green', s=0.5)
+        plt.plot([px(i) for i in range(420000)], linewidth=2, color='blue')
+        plt.show()
+    
+    maxT = max([x[-1][0] for x in X])
+    print('maxT',maxT)
+    zxs = []
+    for px in pxs:
+        zxs.append([px[t] for t in range(0,maxT, 5)])
+    zy = [py[t] for t in range(0,maxT, 5)]
+    
+    #To FIX:
+    reg = LinearRegression().fit(np.array(zxs), zy)
+    
+    xs = [[px(t) for t in range(0,maxT, 5)] for px in pxs]
+    ys = reg.predict(xs)
+    plt.plot(range(0,maxT, 5), ys)
+    plt.show()
+    
+    
+    
+    return py, pxs
+    
+    
 ###########################################################
 
 
@@ -306,7 +448,7 @@ if __name__ == '__main__':
     randomFeature = random.choice(featureList)
     feature = randomFeature['feature']
     process = randomFeature['process']
-    print(process, feature)
+    #print(process, feature)
     
     d = ts[process][feature]
     y = [d[1] for d in d][:100]
@@ -317,6 +459,31 @@ if __name__ == '__main__':
     plt.show()
     ...
     
-    inFids = [5, 8, 21]
-    outFid = 18
-    y = embedRel(ts, inFids, outFid, funcs=None, fData=fData, freqs=freqs, featureList=featureList)
+        
+    inFids = [8,10,9]
+    outFid = 25
+    
+    outFeature = [feature for feature in featureList if feature['featureId'] == outFid][0]
+    inFeatures = [feature for feature in featureList if feature['featureId'] in inFids]
+    
+    outProcess = outFeature['process']
+    outFea = outFeature['feature']
+    ry = ts[outProcess][outFea]
+    T = [ry[0] for ry in ry]
+    Y = [ry[1] for ry in ry]
+    
+    plt.scatter(T,Y, s=1)
+    plt.plot(T,Y, linewidth=0.1, c='red')
+    plt.show()
+    timeSeries = embedRel(ts, inFids, outFid, funcs=None, fData=fData, freqs=freqs, featureList=featureList)
+    ry = timeSeries[outProcess][outFea]
+    T = [ry[0] for ry in ry]
+    Y = [ry[1] for ry in ry]
+    
+    plt.scatter(T,Y, s=1)
+    plt.plot(T,Y, linewidth=0.1, c='green')
+    
+    py, pxs = train(ts,inFids, outFid)
+
+    
+    

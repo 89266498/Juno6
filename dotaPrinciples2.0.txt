@@ -1,0 +1,95 @@
+1. End-game is about taking the high-ground defenses (baracks, towers). To do that successfully, one of the lanes has to be pushed into the high-ground before attacking the high-ground defenses, otherwise backdoor defense will be triggered. 
+
+1.1. Thus, pushing lanes becomes the win-condition in the late-game.
+
+1.2. Winning the late-game teamfight also becomes the win-condition in the late-game.
+
+2. Mid-game is to create conditions conducive for pushing lanes. 
+
+2.1. Therefore, a team must have one pusher (a hero that can push efficiently) that can push efficiently in the mid-late-game.
+
+2.2. The pusher ideally would push away from the lane where carry farms. This forces enemy to commit resources to deal with the pusher/pushed-in lane, or they will lose tower. The more enemy commit resources (and heroes) to deal with the push, the more space will be created for carry to farm/push safely. Or if a teamfight breaks out on the other lane, and if the pushed-in lane attracts some enemy heroes, they have lesser heroes involved in the teamfight, creating a teamfight advantage on our side, in which case the pusher can quickly tp/relocate into the teamfight scene to exploit the teamfight advantage, which translates into a team-wipe, and then taking objectives without more easily.
+
+2.3. So a good pusher must have these properties to serve the strategy laid out in Principle 2.2.:
+
+2.3.1. (DPS condition of pusher) A pusher must have high-enough DPS to clear creep waves quickly, exerting a push pressure on lanes and towers.
+
+2.3.1.2. (Regen condition of pusher) If a pusher casts spells to deal high DPS to creep waves, or uses HP to tank creep waves in the process, to cut down on the time going back to fountain for regen, the pusher ideally would have enough mana/hp regen to sustain the push. That means the pusher can build sustainability or buy enough regen consumables (clarities, mangoes and salves).
+
+2.3.2. (Relocation condition of pusher) A pusher must have the ability to relocate quickly to anywhere in the map, or to any lane of choice.
+
+2.3.2.1. (Mobility condition) A pusher ideally would have high mobility, to relocate quickly. This is sufficient to guarantee relocation condition, but not a necessary condition.
+
+2.3.3. (Survivability/Escapability condition of pusher) A pusher must have the ability to survive and escape the lane in the case where enemies tpes in to try to gank the pusher. To escape preventively without losing much efficiency in pushing, visions will be needed around the potential places where enemies will come for ganking.
+
+2.3.3.1. (Vision condition of pusher) This is a corollary of Principle 2.3.3..
+
+2.3.3.2. (Mobility condition) A sufficient but not necessary condition for escapability of a pusher is mobility. 
+
+2.3.4. From Principles 2.3, we can form a set of metrics to measure the ability to push effectively given a hero plus his itemization. The core metrics are (DPS, Relocation, Survivability). The sub-metrics represents supporting conditions for core metrics. The sub-metrics are (Regen, Mobility, Vision).
+
+2.3.5. A hero + itemization is suitable for pushing activity, if his metrics calculated based on Principle 2.3.4. is very good. If his push-metrics is not good enough, he would have to buy items to increase his push-metrics, which incurs costs. At some point, if the cost is too high to 'repair the push-metrics', it is not efficient, it either means the hero has to farm more in the early game to build items, or he is not efficient to push much earlier. 
+
+2.4. Higher Net Worth doesn't necessarily mean better. If the hero naturally does a job/role better, he can at least do a job effectively with less net worth, just about on par with those who cannot do the job better naturally even with more net worth. So a natural pusher hero can get more efficiency/effectiveness and achieve more objectives with the same net worth or less compared to non-natural pushers. This frees up resources for the carry to farm more items, or for supports to get more support items, which translates into teamfight advantage. The advantage means the team can teamfight much early on, gaining time advantage.
+
+2.4.1. Each hero with his given natural abilities and talents, has a set of natural roles in which he is cost-effective/efficient in doing so. A team with better cost-efficiency will have more advantage, increasing win-probability. It is crucial to draft a team with heroes doing their own roles cost-effectively.
+
+2.4.2. If a lineup/hero+itemization has a weakness, against a smarter team/lineup/player, the weakness will be exploited. So it is crucial in high-mmr games to cover the weaknesses first before stacking on strengths. Mistakes are then made from those who has not covered enough weaknesses, exploiting on mistakes translates into advantage which then turns into net worth and thus strength. 
+
+2.4.3. The higher the MMR, the better the players are at exploiting the opponents' mistakes. The players also becomes smarter at covering weaknesses cost-effectively. Ideally, the player would do less actions/decisions that both cover weaknesses (defense) and augment strengths (offense) at the same time. Lower MMR players focus too much on augmenting strengths, thus exposing weaknesses to opponents.
+
+2.4.3.1. Offense > Defense => Low MMR. (Common)
+2.4.3.2. Defense > Offense => Low MMR. Even though this itemization exposes less weaknesses, but it also has less ability to exploit opponents' weaknesses. 
+2.4.3.3. Offense = Defense => Very high MMR, Immortal. If an itemization satisfies both offense and defense qualities in equal strength, we say that the itemization synergizes with the Hero.
+
+2.5. If a hero/lineup/itemization weakness is there, after large number of games, the weakness is going to manifest. It is already real even if the weakness exists in theory. This thinking is useful in errors prevention. 
+
+2.5.1. Examples: if Enchantress is playing against Windranger, the windranger can ulti Enchantress after level 6, and it becomes more deadly when the Windranger gets more damage items, aghanims (which allows three times windrun), and invisibility at level 20. Let's evaluate the effectiveness of different potential itemizations against windranger: 
+
+Ghost-scepter: this is too defensive at this cost, because it can prevent enchantress from being offensive, and it makes enchantress more susceptible to magical damage by other enemies. (not good)
+
+Dragon-lance: the idea is to hit windranger before windranger can hit enchantress in teamfight. Longer attack range means higher impetus damage. This is sub-optimal because windranger can windrun and close-in the range, so the enchantress impetus deals less or no damage at all. This is essential in teamfights where windranger cannot focus you immediately, or has committed spells on other teammates. This is only conditionally useful in teamfight, but not useful in 1v1 counter-ganking. Dragon-lance is essential as an offensive, and adds a bit of HP, but is not very defensive enough if getting focused.
+
+Force-staff: when windranger ulti enchantress, force-staff myself away to get outside windranger attack range. This is useful in both 1v1 counter-ganking and teamfight, and it builds into hurricane pike with dragon-lance. But force-staff is not offensive enough, because it doesn't deal enough damage. This is a defensive item. It may help escapability and survivability, and can help teammates, but provides less DPS, so if getting force-staff first may result in less GPM, if enchantress needs to carry the game.
+
+Rod of Atos: when encounter windranger, even if windranger ulti enchantress, before windranger purchases bkb/linken, enchantress can root windranger at a range as a preventive measure. If a windranger is rooted, enchantress can turn on heal and simply walks away easily without harm. Over the duration of the root, the enchantress would have healed much of his HP back. In teamfight sceneario, rooted windranger can mean a marked target for teammates to kill. Even if windranger gets invisibility, once rooted, is equivalent of getting stunned + dusted. Rod of Atos provides about 20 int and 10 other stats, increasing overall metrics (mana pool, attack damage, magical resistance, attack speed, HP), giving more survivability in teamfight and 1v1 situations. This is both offensive and defensive. This can be used even when enchatress is silenced! With rod of atos, enchantress can teamfight effectively very early on to get objectives, and take map-control, which restricts windranger mid-game farming patterns.
+
+Enchantress should build Rod of Atos first, and joins teamfight to take objectives. This creates space for carries and pushers to split-push or split-farm. Then plants wards and dewards in the enemies side of map. After that, force-staff first, and then ultimately hurricane pike. Alternatively, Enchantress can buy mekansm to join teamfights. Enemies would have a hard time killing enchantress the mekansm carrier. The build is Rod of Atos + Hurricane-Pike + (bkb, linken-sphere, skadi, pipe, heart, Aghanim, Moon Shard, mkb, mjolnir).
+
+Hand of midas is not good in most cases, because it doesn't add to any of the metric except attack speed and GPM. The return on investment can only be realized if the game drags into the late-game.
+
+Enchantress is not a natural pusher/farmer, he is also a pseudo-carry, so enchantress shouldn't farm too much without participating in teamfights early on, neither should enchantress push on his own. Enchantress is better as a ganker and teamfighter, and should capitalize on these roles early on.
+
+2.6. Offlane is supposed to create space for carry in the mid-game. So if an offlane plays too greedily like a core, it is not optimal as it would take away the already scarce space from the carry, and results in disadvantageous teamfight in the midgame. It may work in lower-MMR games where players are less efficient in exploiting mistakes, it wouldn't work in higher-MMR games. Offlane should farm teamfight-oriented items in the early game, and then joins mid solo hero and another support ganker to teamfight/gank in the mid-game.
+
+3. Laning-stage (early-game) has two objectives: net worth, opening up map-controls for mid-game. To control the map is to control where enemies will be going/farming/fighting, thereby impedes their growth in net worth. This starts with opening-up visions. Opening-up visions means taking tier-1 towers and installing visions around lanes, chokepoints, tier-2 towers and farming areas. To do those successfully, fights will be forced around those places when there's a fight-advantage. To fight/gank successfully, items becomes important. Choosing items that will help increase fight-advantage becomes essential for roles suited for fighting mid-game. To prepare for mid-game fights, gaining enough items from early-game becomes important. 
+
+3.1. Some heroes (gankers and supporters) work better by joining fights in the mid game, while others (carries) only participating fights in the late game. Carries need to farm lots of items early to mid game, while gankers farm in the early game and fight in the mid game. Supporters farm the least, and gain net worth from mostly fighting. This means, the last hits ability of carry needs to be restricted in the early game. The laning-stage meta is such that the two offlanes use spells to trade damage with supporters and carry in the enemy safe lane, while each of them need to prioritize on last-hits and denies. The laning objective is to force enemies out of lane and then prioritize on last-hits and denies. Around 5 min, place a ward at the river to prevent a gank coming from mid level 6 hero.
+
+3.2. Offlane strategy: One way to force enemy out of lane is by out-regen + out-damage them. This is called 'zoning out enemy'. In early levels, getting more experience means having better spell, resulting in more damage or regen. So focusing on denies becomes the key. Sometimes the enemy support will pull neutral creeps to deny offlane experience. In low-mmr games, early deward the side camp is good, but high-mmr games, it forces the enemy to deward, by spending $100 on sentry, dewarding earns $70, almost cost-effective. That means ward-blocking the side camp sub-optimal in high-mmr games.
+
+3.2.1. To deny better in the early levels, having more attack damage is important. Ideally, we want to pick starting items that can buff up HP, mana/hp regen, and attack damage. 
+
+3.2.2. If enemy support pull creeps to side camp, since dota2 is a balancing game, what support gains as experience and gold, will present an opportunity for an equal retaliation. We must recognize such opportunity and exploit it to achieve the equilibrium/balance. The side pull results in our creeps pushing in to their tower and our creeps can deal some damage to their carry. We must maximize the damage dealt by the creeps onto their carry, forcing them to spend the gold earned from support to buy regen for carry. We may lose some experience of one or two creeps, but if it's pulling one creep wave, the resulting creep line will be pushed towards our tower, which we can gain our experience back near our tower easily, this is where the balance lies. Also, pushing in creeps allows us to get bounty rune easily. And towers damage will make carry last-hitting difficult under tower, resulting in less CS. If the carry has little hp left, the support wouldn't dare to pull again, or the carry will hurt. Example: as offlane enchantress, the response to enemy support's pulling, is by tanking tower hits (using heal) and attack their carry. The tower will hit enchantress which the regen can cover. The creeps won't be destroyed by the tower, so they will continue attacking carry. I will spend about 100+ mana, which is restored by a mango, which is equivalent to $70 in cost. But the enemy will lose about 200+ hp, which is restored by two tangos costing $60.
+
+4. An area is said to be controlled, if the enemy cannot go to there farming alone, or the lone hero will risk being ganked. Map-control relies on two components: ease of access by our heroes, and difference in visions. Ease of access means once an enemy appears in that contolled area, my heroes can quickly relocate there to gank. Difference in visions means my area in vision minus their area in vision. If this difference is positive for a region, we have a vision advantage, resulting in information assymmetry. Information assymmetry means I can control when to take fight on our terms when the conditions are right to win the fight, and it also results in better positioning (if the players know to exploit vision --- this ability is weak in low-MMR, so the advantage which the vision adds is less than that in high-MMR games).
+
+4.1. To control an area, first take the nearest tower/shrine, then install vision and deward. To avoid letting enemies know that I'm dewarding, don't deward sentries. But deward the observer ward if possible. In high mmr-games, if smoke ward, don't deward their observer ward, so the enemies wouldn't even know that I've planted the ward in their place! But in low-mmr games, if smoke ward, I can deward their observer ward, because low-mmr players wouldn't try to deward my wards. In low-mmr games, ward at the tier1 ward places, but in high-mmr games, it's better to ward at the tier2 ward places to avoid getting dewarded.
+
+4.2. Tier1 ward places typically is the highest point in the area which gives the maximum vision coverage, but they are easily dewarded in most games. Tier2 wards are at the chokepoints instead, typically gives a smaller coverage of vision, but can give key information to how enemies are relocating. Tier2 wards also get dewarded less frequently.
+
+5. (The Role of Tower): 1) Tower gives vision, 2) Tower represents a TP point, reinforcing defense from enemy, 3) Tower is like a big creep, has its own creep-agro, 4) Tower can be fortified, which can increase its own defense. So a tower represents a stronghold of defense. By removing it, it removes vision, tp point, and other defensive capabilities of enemy in that area. This gives map control around that space where tower was.
+
+6. The strategy of DotA, in essence: Map Control -> Outfarm opponent -> Win Teamfight.
+
+7. Jenkins said, Dota is a game of mistakes. 
+
+8. Strategy: Ganking > Split-pushing > 5-Man Groupup > Ganking.
+
+9. Questions to ask: If Dota is a game of mistakes, then it becomes crucial to know when mistakes arises, whether they are made by the opponents or allies. It also becomes crucial to know what to do with it. 1) How do I know if someone, whether it be ally or enemy, has made a mistake? 2) How do I know what to do with it? 3) Asking the previous two questions presupposes there exists right or wrong actions. How do I know if this assumption is true? How to test this assumption?
+
+10. If Dota is a game of balance, that is, if an enemy chooses an action for the purpose of gaining an advantage, such action will (probably) present an opportunity for an equal retaliation. We must recognize such opportunity and exploit it to achieve the equilibrium/balance. So if two sides are perfect, the game is 50-50 and thus balanced. The balance lies in Nash Equilibrium. Every action has its strengths and weaknesses. If an action is chosen, it must be for its strengths. So a good or right kind of actions would be to exploit the weaknesses resulting from actions chosen by enemy. The weakness is then turned into their disadvantage, which cancels their advantage gained from their chosen action, achieving balance. 
+
+To answer back the question of how do I know if they have made a mistake: their right actions would be to exploit our weaknesses. If they don't do that, they are making a mistake, because they are not doing the balancing act. So we should ask: What are our weaknesses? What should they do to exploit our weaknesses? Are they doing what they should do to exploit our weaknesses?
+
+But asking this question doesn't invite answers on what we should do exactly, we would just know that they have made a mistake, and we can identify the mistake. 

@@ -316,6 +316,7 @@ def embedRel(timeSeries, inFids, outFid, funcs, fData, freqs, featureList):
     for t,dy in y:
         #print(t)
         if t in T:
+            # and t % 1000 == 0
             inX = []
             for x in X:
                 for dt, dx in x:
@@ -507,7 +508,7 @@ if __name__ == '__main__':
     ...
     
         
-    inFids = [5,10,13]
+    inFids = [5,10,21]
     outFid = 25
     
     outFeature = [feature for feature in featureList if feature['featureId'] == outFid][0]

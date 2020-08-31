@@ -7,8 +7,8 @@ import os
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-
+from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV
+from sklearn.neural_network import MLPRegressor
 path = Path('./')
 probeDataPath = path / 'data' / '数据指标整合_仪器与实验室20.08.11-v3.0.xlsx'
 
@@ -316,6 +316,7 @@ def embedRel(timeSeries, inFids, outFid, funcs, fData, freqs, featureList):
     for t,dy in y:
         #print(t)
         if t in T:
+            # and t % 1000 == 0
             inX = []
             for x in X:
                 for dt, dx in x:
@@ -367,8 +368,8 @@ def embedRel(timeSeries, inFids, outFid, funcs, fData, freqs, featureList):
     resY = [z[1] for z in outY]
     T = [d[0] for d in y]
     
-    plt.scatter(T, resY, s=1)
-    plt.plot(T,resY, linewidth=0.1)
+    plt.scatter(T, resY, s=0.3, alpha=0.5)
+    #plt.plot(T,resY, linewidth=0.1)
     plt.show()
     #timeSeries
     #print(outY)
@@ -393,6 +394,8 @@ def train(timeSeries_train, inFids, outFid):
         inFea = inFeature['feature']
         x = timeSeries[inProcess][inFea]
         X.append(x)
+        
+    maxT = max([x[-1][0] for x in X])
     
     print('Synchronizing multiple time series...')
     T = [] 
@@ -401,43 +404,83 @@ def train(timeSeries_train, inFids, outFid):
     T += [d[0] for d in y]
     T = sorted(list(set(T))) #common timestamp in X
     
+    #train-test config
+    zxs = []
+    step = 100
+    trainDays = 1500
+    testDays = trainDays*1.5
+    trainMinutes = step*trainDays
+    trainT = [y[0] for y in y if y[0] <= trainMinutes]
+    trainY = [y[1] for y in y if y[0] <= trainMinutes]
+    n = len(trainY)
+    
+    
     resY = []
     resX = []
     print('Polynomial fitting output y...')
-    py = np.poly1d(np.polyfit([y[0] for y in y],[y[1] for y in y],50))
-    plt.plot([py(i) for i in range(420000)], linewidth=2, color='blue')
+    py = np.poly1d(np.polyfit(trainT,trainY,50))
+    plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
+    #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
     plt.show()
     print('Polynomial fitting input Xs...')
     
     pxs = []
     for x in X:
-        px = np.poly1d(np.polyfit([x[0] for x in x],[x[1] for x in x],50))
+        px = np.poly1d(np.polyfit([x[0] for x in x if x[0] <= trainMinutes],[x[1] for x in x if x[0] <= trainMinutes],50))
         pxs.append(px)
         plt.scatter([x[0] for x in x],[x[1] for x in x], color='green', s=0.5)
-        plt.plot([px(i) for i in range(420000)], linewidth=2, color='blue')
+        #plt.plot([t for t in range(0,maxT,10)], [px(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
         plt.show()
     
-    maxT = max([x[-1][0] for x in X])
-    print('maxT',maxT)
-    zxs = []
     
-    for t in range(0,maxT, 5):
+    print('maxT',maxT)
+
+    for t in range(0,maxT,step):
         zx = [px(t) for px in pxs]
         zxs.append(zx)
     
-    zy = [py[t] for t in range(0,maxT, 5)]
+    zy = [py(t) for t in range(0,maxT, step)]
     
-    #To FIX:
+    plt.scatter([y[0] for y in y],[y[1] for y in y], s=0.1,alpha=0.5, color='green')
+    #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
     print('Training model...')
-    reg = LinearRegression().fit(np.array(zxs), zy)
+    reg = BayesianRidge().fit(np.array(zxs)[:trainDays], zy[:trainDays])#MLPRegressor(hidden_layer_sizes=(2,))
     
-    xs = [[px(t)  for px in pxs] for t in range(0,maxT, 5)]
+    ##########################
+    #TESTING
+    #redo polyfit for test data
+    py = np.poly1d(np.polyfit([y[0] for y in y],[y[1] for y in y],50))
+    #plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
+    #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
+    #plt.show()
+    #print('Polynomial fitting input Xs...')
+    
+    pxs = []
+    for x in X:
+        px = np.poly1d(np.polyfit([x[0] for x in x],[x[1] for x in x],50))
+        pxs.append(px)
+        #plt.scatter([x[0] for x in x],[x[1] for x in x], color='green', s=0.5)
+        #plt.plot([t for t in range(0,maxT,10)], [px(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
+        #plt.show()
+    
+    
+    print('maxT',maxT)
+
+    for t in range(0,maxT,step):
+        zx = [px(t) for px in pxs]
+        zxs.append(zx)
+    
+    zy = [py(t) for t in range(0,maxT, step)]
+    xs = [[px(t)  for px in pxs] for t in range(0,maxT, step)]
     print('Predicting output...')
     ys = reg.predict(xs)
-    plt.plot(ys)
-    plt.show()
-    
-    
+    plt.plot([t for t in range(0,maxT, step)], ys, color='yellow')
+    #plt.show()
+    plt.axvline(x=step*trainDays)
+    plt.axvline(x=step*testDays)
+    # pY = np.poly1d(np.polyfit(ys[:1000],zy[:1000],3))
+    # zY = [pY(y) for y in ys]
+    # plt.plot([t for t in range(0,maxT, 100)], zY, linewidth=1, color='yellow')
     
     return py, pxs
     
@@ -450,22 +493,22 @@ if __name__ == '__main__':
     #ts = randomGenerateTimeSeries(fData, freqs, days=300)
     ts = readTimeSeries()
     
-    randomFeature = random.choice(featureList)
-    feature = randomFeature['feature']
-    process = randomFeature['process']
-    #print(process, feature)
+    # randomFeature = random.choice(featureList)
+    # feature = randomFeature['feature']
+    # process = randomFeature['process']
+    # #print(process, feature)
     
-    d = ts[process][feature]
-    y = [d[1] for d in d][:100]
-    x = [d[0] for d in d][:100]
-    np.min(y)
-    plt.plot(x,y)
-    plt.axhline(y=0)
-    plt.show()
+    # d = ts[process][feature]
+    # y = [d[1] for d in d][:100]
+    # x = [d[0] for d in d][:100]
+    # np.min(y)
+    # plt.plot(x,y)
+    # plt.axhline(y=0)
+    # plt.show()
     ...
     
         
-    inFids = [8,10,9]
+    inFids = [5,10,21]
     outFid = 25
     
     outFeature = [feature for feature in featureList if feature['featureId'] == outFid][0]
@@ -473,22 +516,19 @@ if __name__ == '__main__':
     
     outProcess = outFeature['process']
     outFea = outFeature['feature']
-    ry = ts[outProcess][outFea]
-    T = [ry[0] for ry in ry]
-    Y = [ry[1] for ry in ry]
+    # ry = ts[outProcess][outFea]
+    # T = [ry[0] for ry in ry]
+    # Y = [ry[1] for ry in ry]
     
-    plt.scatter(T,Y, s=1)
-    plt.plot(T,Y, linewidth=0.1, c='red')
-    plt.show()
+    # plt.scatter(T,Y, s=1)
+    # plt.scatter(T,Y, s=0.5, alpha=0.7, c='red')
+    # plt.show()
     timeSeries = embedRel(ts, inFids, outFid, funcs=None, fData=fData, freqs=freqs, featureList=featureList)
-    ry = timeSeries[outProcess][outFea]
-    T = [ry[0] for ry in ry]
-    Y = [ry[1] for ry in ry]
-    
-    plt.scatter(T,Y, s=1)
-    plt.plot(T,Y, linewidth=0.1, c='green')
-    
-    py, pxs = train(ts,inFids, outFid)
+    # ry = timeSeries[outProcess][outFea]
+    # T = [ry[0] for ry in ry]
+    # Y = [ry[1] for ry in ry]
+
+    py, pxs = train(timeSeries,inFids, outFid)
 
     
     

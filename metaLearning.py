@@ -58,7 +58,7 @@ def generateTrainingData(nx=3):
     print('Normalizing inputs and output...')
     
     miu = np.random.uniform(0, 10000)
-    sigma = np.random.normal(miu, miu/random.choice([3,4,7,10,20]))
+    sigma = np.random.normal(miu, miu/random.choice([3,7,10,20, 50, 100]))
     
     mius = np.mean(inXs, axis=0)
     sigmas = np.std(inXs, axis=0) + mius/10

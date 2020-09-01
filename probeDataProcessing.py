@@ -421,6 +421,8 @@ def train(timeSeries_train, inFids, outFid):
     py = np.poly1d(np.polyfit(trainT,trainY,50))
     plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
     #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
+    plt.axvline(x=step*trainDays)
+    plt.axvline(x=step*testDays)
     plt.show()
     print('Polynomial fitting input Xs...')
     
@@ -430,6 +432,8 @@ def train(timeSeries_train, inFids, outFid):
         pxs.append(px)
         plt.scatter([x[0] for x in x],[x[1] for x in x], color='green', s=0.5)
         #plt.plot([t for t in range(0,maxT,10)], [px(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
+        plt.axvline(x=step*trainDays)
+        plt.axvline(x=step*testDays)
         plt.show()
     
     
@@ -475,6 +479,8 @@ def train(timeSeries_train, inFids, outFid):
     print('Predicting output...')
     ys = reg.predict(xs)
     plt.plot([t for t in range(0,maxT, step)], ys, color='yellow')
+    pY = np.poly1d(np.polyfit([y[0] for y in y],[y[1] for y in y],50))
+    plt.plot([t for t in range(0,maxT, step)],[pY(t) for t in range(0,maxT, step)], linewidth=1, c='black')
     #plt.show()
     plt.axvline(x=step*trainDays)
     plt.axvline(x=step*testDays)
@@ -508,8 +514,8 @@ if __name__ == '__main__':
     ...
     
         
-    inFids = [5,10,21]
-    outFid = 25
+    inFids = [6,9,13]
+    outFid = 20
     
     outFeature = [feature for feature in featureList if feature['featureId'] == outFid][0]
     inFeatures = [feature for feature in featureList if feature['featureId'] in inFids]

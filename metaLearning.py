@@ -22,30 +22,37 @@ def generateTrainingData(nx=3):
     for i in range(nx):
         print('generating', i, 'out of', nx, 'inputs:','freq',freqs[i], 'length',length)
         sigma = random.choice([3,4,7,10,20])
-        period1 = np.abs(np.random.normal(length, length/4))
-        phase1 = length*2*random.random() 
-        
-        period2 = np.abs(np.random.normal(length/2, length/8))
-        phase2 = length*random.random() 
-        
-        period3 = np.abs(np.random.normal(length/4, length/30))
-        phase3 = length*0.5*random.random() 
-        
-        typical = np.random.uniform(0, 10000)
+        typical = np.random.uniform(0.01, 10000)
         rnge = [np.random.uniform(0, typical), np.random.uniform(typical, typical*5)]
-        
         timeSeries = []       
         freq = freqs[i]
         times = [j*freq for j in range(int(length/freq))]
         
-        if random.random() > 0.5:
+        if random.random() > 0.99:
             for t in range(length):
                 x = np.abs(np.round(np.clip(np.random.normal(typical, typical*0.5/sigma), min(rnge), max(rnge)),2))
                 d = (t, x)
                 timeSeries.append(d)
         else:
+            
+            periodNum = random.choice(range(1,8))
+            periods = []
+            phases = []
+            for i in range(periodNum):
+                period = np.abs(np.random.normal(length, length))
+                phase = length*2*random.random() 
+                periods.append(period)
+                phases.append(phase)
+        
             for t in range(length):
-                x = np.round(np.clip(np.random.normal(typical, typical*0.5/sigma) + np.random.normal(typical*0.3, typical*0.03)*(np.sin(2*np.pi*t/period1 + phase1)) + np.random.normal(typical*0.1, typical*0.01)*(np.sin(2*np.pi*t/period2 + phase2)) + np.random.normal(typical*0.05, typical*0.001)*(np.sin(2*np.pi*t/period3 + phase3)), min(rnge), max(rnge)),2)
+                x = np.random.normal(typical, typical*0.5/sigma)  #typical distribution with noise
+                for i, period in enumerate(periods):
+                    wavelet = np.sin(2*np.pi*t/periods[i] + phases[i])
+                    amplitude = typical*0.3*random.random()/(i+1)**26
+                    x += amplitude*wavelet
+                    
+                x = np.round(np.clip(x, min(rnge), max(rnge)),2)
+                
                 d = (t, x)
                 timeSeries.append(d)
         X.append(timeSeries)
@@ -69,13 +76,28 @@ def generateTrainingData(nx=3):
     params1 = np.random.uniform(-1,1,len(X))
     params2 = np.random.uniform(-1,1,len(X))
     params3 = np.random.uniform(-1,1,2)
+    
+    params4 = np.random.uniform(-1,1,2)
+    params5 = np.random.uniform(-1,1,2)
+    params6 = np.random.uniform(-1,1,2)
+    
+    randState = random.random()
     zs = []
     print('Generating underlying relationship...')
     for dx in inXs:
         z1 = np.tanh(np.dot(params1, (dx-mius)/sigmas))
         z2 = np.tanh(np.dot(params2, (dx-mius)/sigmas))
         z3 = np.array([z1,z2])
-        z = np.tanh(np.dot(params3, z3))
+        #z = np.tanh(np.dot(params3, z3))
+        
+        if randState > 0.5:
+            #add another layer
+            z4 = np.tanh(np.dot(params4, z3))
+            z5 = np.tanh(np.dot(params5, z3))
+            z6 = np.array([z4,z5])
+            z = np.tanh(np.dot(params6, z6))
+        else:
+            z = np.tanh(np.dot(params3, z3))
         zs.append(z)
     zs = np.array(zs)
     #print('z',zs)
@@ -111,6 +133,46 @@ def generateTrainingData(nx=3):
             ys.append([t,y])
     
     return outX, ys
+
+def polyfitCV(t, x):
+    #n = int(trainPortion*len(t))
+    #trT, teT = t[:n], t[n:]
+    #trX, teX = x[:n], x[n:]
+    k=10
+
+    errors = []
+    ps = []
+    for order in range(1,50):
+        err = []
+        for i in range(k):
+            step = int(len(t)/k)
+            trT = t[:i*step] + t[(i+1)*step:]
+            teT = t[i*step: (i+1)*step]
+            trX = x[:i*step] + x[(i+1)*step:]
+            teX = x[i*step: (i+1)*step]
+
+            p = np.poly1d(np.polyfit(trT,trX,order))
+            ps.append(p)
+            predX = [p(t) for t in teT]
+            error = np.sqrt(np.mean((np.array(predX) - np.array(teX))**2))
+            err.append(error)
+        errors.append(np.mean(err))
+
+    minE = min(errors)
+    ind = errors.index(minE)
+    order = ind + 1
+    print('order', order)
+    p = np.poly1d(np.polyfit(t,x,order))
+    return p
+
+def polyfit(t, x):
+    #n = int(trainPortion*len(t))
+    #trT, teT = t[:n], t[n:]
+    #trX, teX = x[:n], x[n:]
+    
+    p = np.poly1d(np.polyfit(t,x,50))
+    
+    return p
     
 def train(X, y):
     print("Pulling inputs and output data from time series...")
@@ -122,17 +184,17 @@ def train(X, y):
         T += [d[0] for d in x]
     
     T += [d[0] for d in y]
-    T = sorted(list(set(T))) #common timestamp in X
+    #T = sorted(list(set(T))) #common timestamp in X
     print(max(T))
     maxT = max(T)
     #train-test config
     zxs = []
     
-    trainMinutes = int(maxT*0.5)
-    testMinutes = int(trainMinutes*1.5)
+    trainLength = int(maxT*0.5)
+    testLength = int(trainLength*1.5)
     
-    trainT = [y[0] for y in y if y[0] <= trainMinutes]
-    trainY = [y[1] for y in y if y[0] <= trainMinutes]
+    trainT = [y[0] for y in y if y[0] <= trainLength]
+    trainY = [y[1] for y in y if y[0] <= trainLength]
     n = len(trainY)
     
     
@@ -142,19 +204,19 @@ def train(X, y):
     py = np.poly1d(np.polyfit(trainT,trainY,50))
     #plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
     #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
-    #plt.axvline(x=trainMinutes)
-    #plt.axvline(x=testMinutes)
+    #plt.axvline(x=trainLength)
+    #plt.axvline(x=testLength)
     #plt.show()
     print('Polynomial fitting input Xs...')
     
     pxs = []
     for x in X:
-        px = np.poly1d(np.polyfit([x[0] for x in x if x[0] <= trainMinutes],[x[1] for x in x if x[0] <= trainMinutes],50))
+        px = polyfit([x[0] for x in x if x[0] <= trainLength],[x[1] for x in x if x[0] <= trainLength])
         pxs.append(px)
-        plt.scatter([x[0] for x in x],[x[1] for x in x], color='green', s=0.5)
+        plt.scatter([x[0] for x in x],[x[1] for x in x], color='blue', s=0.5)
         #plt.plot([t for t in range(0,maxT,10)], [px(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
-        plt.axvline(x=trainMinutes)
-        plt.axvline(x=testMinutes)
+        plt.axvline(x=trainLength)
+        plt.axvline(x=testLength)
         plt.show()
     
     
@@ -169,26 +231,27 @@ def train(X, y):
     plt.scatter([y[0] for y in y],[y[1] for y in y], s=2,alpha=0.5, color='green')
     #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
     print('Training model...')
-    reg = BayesianRidge().fit(np.array(zxs)[:trainMinutes], zy[:trainMinutes])#MLPRegressor(hidden_layer_sizes=(2,))
+    reg = BayesianRidge().fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
     
     ##########################
     #TESTING
     #redo polyfit for test data
-    py = np.poly1d(np.polyfit([y[0] for y in y],[y[1] for y in y],50))
+    py = polyfitCV([y[0] for y in y],[y[1] for y in y])
     #plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
     #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
     #plt.show()
     #print('Polynomial fitting input Xs...')
     
     pxs = []
+    
     for x in X:
-        px = np.poly1d(np.polyfit([x[0] for x in x],[x[1] for x in x],50))
+        #Overfitting
+        px = polyfit([x[0] for x in x],[x[1] for x in x])
         pxs.append(px)
         #plt.scatter([x[0] for x in x],[x[1] for x in x], color='green', s=0.5)
         #plt.plot([t for t in range(0,maxT,10)], [px(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
         #plt.show()
-    
-    
+        
     #print('maxT',maxT)
 
     for t in range(0,maxT):
@@ -196,15 +259,16 @@ def train(X, y):
         zxs.append(zx)
     
     zy = [py(t) for t in range(0,maxT)]
-    xs = [[px(t)  for px in pxs] for t in range(0,maxT)]
+    T = [t for t in range(0,maxT)]
+    xs = [[px(t) for px in pxs] for t in range(0,maxT)]
     print('Predicting output...')
     ys = reg.predict(xs)
-    plt.plot([t for t in range(0,maxT)], ys, color='yellow')
-    pY = np.poly1d(np.polyfit([y[0] for y in y],[y[1] for y in y],50))
-    plt.plot([t for t in range(0,maxT)],[pY(t) for t in range(0,maxT)], linewidth=1, c='black')
+    plt.plot(T, ys, color='yellow')
+    
+    plt.plot(T,zy, linewidth=1, c='black')
     #plt.show()
-    plt.axvline(x=trainMinutes)
-    plt.axvline(x=testMinutes)
+    plt.axvline(x=trainLength)
+    plt.axvline(x=testLength)
     plt.show()
     # pY = np.poly1d(np.polyfit(ys[:1000],zy[:1000],3))
     # zY = [pY(y) for y in ys]

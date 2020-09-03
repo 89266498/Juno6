@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV
 from sklearn.neural_network import MLPRegressor
 
+
 path = Path('./')
 
 #randomness goes from 0 to infinity
@@ -39,8 +40,8 @@ def generateTrainingData(nx=3):
             periods = []
             phases = []
             for i in range(periodNum):
-                period = np.abs(np.random.normal(length, length))
-                phase = length*2*random.random() 
+                period = np.abs(np.random.normal(length/5, length/2))
+                phase = length*17*random.random() 
                 periods.append(period)
                 phases.append(phase)
         
@@ -138,11 +139,12 @@ def polyfitCV(t, x):
     #n = int(trainPortion*len(t))
     #trT, teT = t[:n], t[n:]
     #trX, teX = x[:n], x[n:]
-    k=10
+    k=20
 
     errors = []
     ps = []
-    for order in range(1,50):
+    orders = list(range(2,15))
+    for order in orders:
         err = []
         for i in range(k):
             step = int(len(t)/k)
@@ -160,7 +162,7 @@ def polyfitCV(t, x):
 
     minE = min(errors)
     ind = errors.index(minE)
-    order = ind + 1
+    order = orders[ind]
     print('order', order)
     p = np.poly1d(np.polyfit(t,x,order))
     return p
@@ -169,10 +171,21 @@ def polyfit(t, x):
     #n = int(trainPortion*len(t))
     #trT, teT = t[:n], t[n:]
     #trX, teX = x[:n], x[n:]
-    
+    n = int(0.2*len(t))
+    t = t[:n]*len(t) + t + t[-n:]*len(t)
+    x = x[:n]*len(x) + x + x[-n:]*len(x)
+    #plt.scatter(t,x, s=0.1, alpha=0.5)
+    #plt.show()
     p = np.poly1d(np.polyfit(t,x,50))
     
     return p
+
+def regress(t,x):
+    p = polyfitCV(t,x)
+    
+    return p
+    ...
+    
     
 def train(X, y):
     print("Pulling inputs and output data from time series...")
@@ -201,7 +214,7 @@ def train(X, y):
     resY = []
     resX = []
     print('Polynomial fitting output y...')
-    py = np.poly1d(np.polyfit(trainT,trainY,50))
+    py = regress(trainT,trainY)
     #plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
     #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
     #plt.axvline(x=trainLength)
@@ -211,10 +224,10 @@ def train(X, y):
     
     pxs = []
     for x in X:
-        px = polyfit([x[0] for x in x if x[0] <= trainLength],[x[1] for x in x if x[0] <= trainLength])
+        px = regress([x[0] for x in x if x[0] <= trainLength],[x[1] for x in x if x[0] <= trainLength])
         pxs.append(px)
         plt.scatter([x[0] for x in x],[x[1] for x in x], color='blue', s=0.5)
-        #plt.plot([t for t in range(0,maxT,10)], [px(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
+        #plt.plot([x[0] for x in x], [px(x[0])  for x in x], linewidth=2, color='blue')
         plt.axvline(x=trainLength)
         plt.axvline(x=testLength)
         plt.show()
@@ -236,7 +249,7 @@ def train(X, y):
     ##########################
     #TESTING
     #redo polyfit for test data
-    py = polyfitCV([y[0] for y in y],[y[1] for y in y])
+    py = regress([y[0] for y in y],[y[1] for y in y])
     #plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
     #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
     #plt.show()
@@ -246,7 +259,7 @@ def train(X, y):
     
     for x in X:
         #Overfitting
-        px = polyfit([x[0] for x in x],[x[1] for x in x])
+        px = regress([x[0] for x in x],[x[1] for x in x])
         pxs.append(px)
         #plt.scatter([x[0] for x in x],[x[1] for x in x], color='green', s=0.5)
         #plt.plot([t for t in range(0,maxT,10)], [px(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
@@ -263,7 +276,7 @@ def train(X, y):
     xs = [[px(t) for px in pxs] for t in range(0,maxT)]
     print('Predicting output...')
     ys = reg.predict(xs)
-    plt.plot(T, ys, color='yellow')
+    plt.plot(T, ys, color='blue')
     
     plt.plot(T,zy, linewidth=1, c='black')
     #plt.show()

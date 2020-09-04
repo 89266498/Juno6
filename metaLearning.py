@@ -31,26 +31,28 @@ def generateTrainingData(nx=3):
         
         if random.random() > 0.99:
             for t in range(length):
-                x = np.abs(np.round(np.clip(np.random.normal(typical, typical*0.5/sigma), min(rnge), max(rnge)),2))
+                x = np.abs(np.round(np.clip(np.random.normal(typical, typical*0.1/sigma), min(rnge), max(rnge)),2))
                 d = (t, x)
                 timeSeries.append(d)
         else:
             
-            periodNum = random.choice(range(1,8))
+            periodNum = random.choice(range(1,4))
+            amps = np.random.uniform(typical*0.01, typical*0.1, periodNum)
             periods = []
             phases = []
             for i in range(periodNum):
-                period = np.abs(np.random.normal(length/5, length/2))
-                phase = length*17*random.random() 
+                period = np.abs(np.random.normal(length/2, length))/ (random.choice([3,4,5,6,7,8]))**i
+                phase = length*1*random.random() 
                 periods.append(period)
                 phases.append(phase)
-        
+                
             for t in range(length):
-                x = np.random.normal(typical, typical*0.5/sigma)  #typical distribution with noise
+                x = np.random.normal(typical, typical*0.005/sigma)  #typical distribution with noise
                 for i, period in enumerate(periods):
                     wavelet = np.sin(2*np.pi*t/periods[i] + phases[i])
-                    amplitude = typical*0.3*random.random()/(i+1)**26
+                    amplitude = amps[i]/(random.choice([3,4,5,6,7,8]))**i
                     x += amplitude*wavelet
+                    x += np.random.normal(amplitude, np.abs(amplitude/random.choice([3,4,5,6,7,8])))
                     
                 x = np.round(np.clip(x, min(rnge), max(rnge)),2)
                 
@@ -139,11 +141,11 @@ def polyfitCV(t, x):
     #n = int(trainPortion*len(t))
     #trT, teT = t[:n], t[n:]
     #trX, teX = x[:n], x[n:]
-    k=20
+    k=10
 
     errors = []
     ps = []
-    orders = list(range(2,15))
+    orders = list(range(2,50))
     for order in orders:
         err = []
         for i in range(k):
@@ -156,7 +158,7 @@ def polyfitCV(t, x):
             p = np.poly1d(np.polyfit(trT,trX,order))
             ps.append(p)
             predX = [p(t) for t in teT]
-            error = np.sqrt(np.mean((np.array(predX) - np.array(teX))**2))
+            error = np.mean(np.abs(np.array(predX) - np.array(teX)))
             err.append(error)
         errors.append(np.mean(err))
 
@@ -171,9 +173,7 @@ def polyfit(t, x):
     #n = int(trainPortion*len(t))
     #trT, teT = t[:n], t[n:]
     #trX, teX = x[:n], x[n:]
-    n = int(0.2*len(t))
-    t = t[:n]*len(t) + t + t[-n:]*len(t)
-    x = x[:n]*len(x) + x + x[-n:]*len(x)
+
     #plt.scatter(t,x, s=0.1, alpha=0.5)
     #plt.show()
     p = np.poly1d(np.polyfit(t,x,50))
@@ -182,7 +182,12 @@ def polyfit(t, x):
 
 def regress(t,x):
     p = polyfitCV(t,x)
-    
+    # xpred = [p(t) for t in range(0,max(t))]
+    # iqr = np.percentile(xpred,75) - np.percentile(xpred, 25)
+    # def P(xin, iqr=iqr):
+
+    #     xout = np.median(xin) + 3*iqr*np.tanh((xin-np.median(xin))/(3*iqr))
+    #     return xout
     return p
     ...
     
@@ -244,8 +249,9 @@ def train(X, y):
     plt.scatter([y[0] for y in y],[y[1] for y in y], s=2,alpha=0.5, color='green')
     #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
     print('Training model...')
+    #reg = MLPRegressor(hidden_layer_sizes=(100,), activation='tanh', max_iter=100000, solver='sgd').fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
     reg = BayesianRidge().fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
-    
+    #P = regress(np.array(zxs)[:trainLength], zy[:trainLength])
     ##########################
     #TESTING
     #redo polyfit for test data
@@ -272,14 +278,23 @@ def train(X, y):
         zxs.append(zx)
     
     zy = [py(t) for t in range(0,maxT)]
+    iqr = np.percentile(zy,75) - np.percentile(zy, 25)
+
+    zy = np.median(zy) + 3*iqr*np.tanh((zy-np.median(zy))/(3*iqr))
+    
     T = [t for t in range(0,maxT)]
     xs = [[px(t) for px in pxs] for t in range(0,maxT)]
     print('Predicting output...')
     ys = reg.predict(xs)
+    
+    iqr = np.percentile(ys,75) - np.percentile(ys, 25)
+
+    ys = np.median(ys) + 3*iqr*np.tanh((ys-np.median(ys))/(3*iqr))
+    
+    #ys = [p(x) for x in xs]
     plt.plot(T, ys, color='blue')
     
     plt.plot(T,zy, linewidth=1, c='black')
-    #plt.show()
     plt.axvline(x=trainLength)
     plt.axvline(x=testLength)
     plt.show()

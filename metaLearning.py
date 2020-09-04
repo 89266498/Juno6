@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV
 from sklearn.neural_network import MLPRegressor
-
+from sklearn.ensemble import RandomForestRegressor
 
 path = Path('./')
 
@@ -181,13 +181,18 @@ def polyfit(t, x):
     return p
 
 def regress(t,x):
-    p = polyfitCV(t,x)
+    p = polyfit(t,x)
     # xpred = [p(t) for t in range(0,max(t))]
     # iqr = np.percentile(xpred,75) - np.percentile(xpred, 25)
     # def P(xin, iqr=iqr):
 
     #     xout = np.median(xin) + 3*iqr*np.tanh((xin-np.median(xin))/(3*iqr))
     #     return xout
+    # t = np.array(t).reshape(-1,1)
+    # regr = RandomForestRegressor(n_estimators=100, n_jobs=100).fit(t,x)
+    # p = lambda t: regr.predict([[t]])[0]
+    
+    
     return p
     ...
     
@@ -250,7 +255,7 @@ def train(X, y):
     #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
     print('Training model...')
     #reg = MLPRegressor(hidden_layer_sizes=(100,), activation='tanh', max_iter=100000, solver='sgd').fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
-    reg = BayesianRidge().fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
+    regr = BayesianRidge().fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
     #P = regress(np.array(zxs)[:trainLength], zy[:trainLength])
     ##########################
     #TESTING
@@ -280,16 +285,16 @@ def train(X, y):
     zy = [py(t) for t in range(0,maxT)]
     iqr = np.percentile(zy,75) - np.percentile(zy, 25)
 
-    zy = np.median(zy) + 3*iqr*np.tanh((zy-np.median(zy))/(3*iqr))
+    zy = np.median(zy) + 2*iqr*np.tanh((zy-np.median(zy))/(2*iqr))
     
     T = [t for t in range(0,maxT)]
     xs = [[px(t) for px in pxs] for t in range(0,maxT)]
     print('Predicting output...')
-    ys = reg.predict(xs)
+    ys = regr.predict(xs)
     
     iqr = np.percentile(ys,75) - np.percentile(ys, 25)
 
-    ys = np.median(ys) + 3*iqr*np.tanh((ys-np.median(ys))/(3*iqr))
+    ys = np.median(ys) + 2*iqr*np.tanh((ys-np.median(ys))/(2*iqr))
     
     #ys = [p(x) for x in xs]
     plt.plot(T, ys, color='blue')
@@ -302,8 +307,11 @@ def train(X, y):
     # zY = [pY(y) for y in ys]
     # plt.plot([t for t in range(0,maxT, 100)], zY, linewidth=1, color='yellow')
     
-    return py, pxs
+    return regr
+
+
+
 
 if __name__ == '__main__':
     X, y = generateTrainingData()
-    py, pxs = train(X,y)
+    regr = train(X,y)

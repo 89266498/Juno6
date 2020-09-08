@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
+import warnings
 
+warnings.filterwarnings('ignore') 
 path = Path('./')
 
 #randomness goes from 0 to infinity
@@ -197,7 +199,7 @@ def regress(t,x):
     ...
     
     
-def train(X, y):
+def train(X, y, featureImportance=True):
     print("Pulling inputs and output data from time series...")
     #maxT = max([x[-1][0] for x in X])
     
@@ -255,7 +257,11 @@ def train(X, y):
     #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
     print('Training model...')
     #reg = MLPRegressor(hidden_layer_sizes=(100,), activation='tanh', max_iter=100000, solver='sgd').fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
-    regr = BayesianRidge().fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
+    if featureImportance:
+        print('Analyzing Gini Feature Importances...')
+        regr = RandomForestRegressor(n_estimators=100).fit(np.array(zxs)[:trainLength], zy[:trainLength])
+        fi = regr.feature_importances_
+    regr = BayesianRidge(normalize=True).fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,)) #RandomForestRegressor(n_estimators=100)
     #P = regress(np.array(zxs)[:trainLength], zy[:trainLength])
     ##########################
     #TESTING
@@ -307,11 +313,10 @@ def train(X, y):
     # zY = [pY(y) for y in ys]
     # plt.plot([t for t in range(0,maxT, 100)], zY, linewidth=1, color='yellow')
     
-    return regr
-
+    return regr, fi
 
 
 
 if __name__ == '__main__':
     X, y = generateTrainingData()
-    regr = train(X,y)
+    regr, fi = train(X,y)

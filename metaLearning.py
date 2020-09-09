@@ -182,8 +182,28 @@ def polyfit(t, x):
     
     return p
 
+def forecastPeriodicTrend(x):
+    #x is a time series: x = [(t,x_t)]
+    #if no X is given, predict y based solely on periodicity of y. If X is given as dependent variables of y, train a model of y = f(x), then use periodicity of x to predict y. In both cases, the output should be a function y(t).
+    #fit x(t) with a summation of five sinusoidal waves + linear trend.
+    xs = [x[1] for x in x]
+    ts = [[x[0]] for x in x]
+    regr = RandomForestRegressor(n_estimators=1).fit(ts, xs)
+    def p(t):
+        t = np.array(t).reshape(-1,1)
+        result = regr.predict(t)
+        return result
+            
+    return p
+
+def randomForestFit(t,x):
+    x = list(zip(t,x))
+    p = forecastPeriodicTrend(x)
+    return p
+
 def regress(t,x):
-    p = polyfit(t,x)
+    p = randomForestFit(t,x)
+    #p = polyfit(t,x)
     # xpred = [p(t) for t in range(0,max(t))]
     # iqr = np.percentile(xpred,75) - np.percentile(xpred, 25)
     # def P(xin, iqr=iqr):
@@ -199,7 +219,7 @@ def regress(t,x):
     ...
     
     
-def train(X, y, featureImportance=True):
+def train(X, y, featureImportance=True, train=0.5, test=0.25):
     print("Pulling inputs and output data from time series...")
     #maxT = max([x[-1][0] for x in X])
     
@@ -215,8 +235,8 @@ def train(X, y, featureImportance=True):
     #train-test config
     zxs = []
     
-    trainLength = int(maxT*0.5)
-    testLength = int(trainLength*1.5)
+    trainLength = int(maxT*train)
+    testLength = int(trainLength*((train+test)/train))
     
     trainT = [y[0] for y in y if y[0] <= trainLength]
     trainY = [y[1] for y in y if y[0] <= trainLength]
@@ -225,14 +245,14 @@ def train(X, y, featureImportance=True):
     
     resY = []
     resX = []
-    print('Polynomial fitting output y...')
+    print('Regressing output y...')
     py = regress(trainT,trainY)
     #plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
     #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
     #plt.axvline(x=trainLength)
     #plt.axvline(x=testLength)
     #plt.show()
-    print('Polynomial fitting input Xs...')
+    print('Regressing input Xs...')
     
     pxs = []
     for x in X:
@@ -246,14 +266,16 @@ def train(X, y, featureImportance=True):
     
     
     print('maxT',maxT)
-
-    for t in range(0,maxT):
-        zx = [px(t) for px in pxs]
-        zxs.append(zx)
     
-    zy = [py(t) for t in range(0,maxT)]
+    zxs = np.array([px(list(range(0,maxT))) for px in pxs]).T
     
-    plt.scatter([y[0] for y in y],[y[1] for y in y], s=2,alpha=0.5, color='green')
+    # for t in range(0,maxT):
+    #     zx = [px(t) for px in pxs]
+    #     zxs.append(zx)
+    
+    zy = py(range(0,maxT))
+    
+    plt.scatter([y[0] for y in y],[y[1] for y in y], s=0.5,alpha=0.5, color='green')
     #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
     print('Training model...')
     #reg = MLPRegressor(hidden_layer_sizes=(100,), activation='tanh', max_iter=100000, solver='sgd').fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
@@ -261,11 +283,13 @@ def train(X, y, featureImportance=True):
         print('Analyzing Gini Feature Importances...')
         regr = RandomForestRegressor(n_estimators=100).fit(np.array(zxs)[:trainLength], zy[:trainLength])
         fi = regr.feature_importances_
+    print('Analyzing underlying relationships between inputs and outputs...')
     regr = BayesianRidge(normalize=True).fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,)) #RandomForestRegressor(n_estimators=100)
     #P = regress(np.array(zxs)[:trainLength], zy[:trainLength])
     ##########################
     #TESTING
     #redo polyfit for test data
+    print('Testing...')
     py = regress([y[0] for y in y],[y[1] for y in y])
     #plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
     #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
@@ -284,28 +308,27 @@ def train(X, y, featureImportance=True):
         
     #print('maxT',maxT)
 
-    for t in range(0,maxT):
-        zx = [px(t) for px in pxs]
-        zxs.append(zx)
-    
-    zy = [py(t) for t in range(0,maxT)]
+
+    zxs = np.array([px(list(range(0,maxT))) for px in pxs]).T
+    zy = py(range(0, maxT))
     iqr = np.percentile(zy,75) - np.percentile(zy, 25)
 
     zy = np.median(zy) + 2*iqr*np.tanh((zy-np.median(zy))/(2*iqr))
     
     T = [t for t in range(0,maxT)]
-    xs = [[px(t) for px in pxs] for t in range(0,maxT)]
+    xs = np.array([px(range(0,maxT)) for px in pxs]).T
+    #xs = [[px(t) for px in pxs] for t in range(0,maxT)]
     print('Predicting output...')
     ys = regr.predict(xs)
-    
+      
     iqr = np.percentile(ys,75) - np.percentile(ys, 25)
 
     ys = np.median(ys) + 2*iqr*np.tanh((ys-np.median(ys))/(2*iqr))
     
     #ys = [p(x) for x in xs]
-    plt.plot(T, ys, color='blue')
+    plt.scatter(T, ys, color='blue', alpha=0.5, s=0.1)
     
-    plt.plot(T,zy, linewidth=1, c='black')
+    plt.scatter(T,zy, c='black', alpha=0.5, s=0.1)
     plt.axvline(x=trainLength)
     plt.axvline(x=testLength)
     plt.show()
@@ -316,7 +339,19 @@ def train(X, y, featureImportance=True):
     return regr, fi
 
 
+    
 
 if __name__ == '__main__':
     X, y = generateTrainingData()
     regr, fi = train(X,y)
+    # train = 0.1
+    # x = X[0]
+    # T = max([x[0] for x in X[0]])
+    # print('train T', int(T*train))
+    # p = forecastPeriodicTrend([v for v in x if v[0] <int(T*train)])
+    
+    # Ts = range(T)
+    # plt.scatter([x[0] for x in X[0]], [x[1] for x in X[0]], s=0.5, alpha=1, color='green')
+    # plt.scatter(Ts, [p(t) for t in Ts], s=0.5, alpha=0.5)
+    # plt.axvline(x=T*train)
+    

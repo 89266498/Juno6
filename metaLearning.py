@@ -18,7 +18,7 @@ path = Path('./')
 #randomness goes from 0 to infinity
 def generateTrainingData(nx=3):
     #nx=3
-    length = int(np.random.uniform(30, 40000))
+    length = int(np.random.uniform(30, 10000))
     freqs = [int(v) for v in np.clip(np.abs(np.random.normal(10, np.random.uniform(10, 100), size=nx)), 1, length)]
     X = []
     
@@ -106,7 +106,7 @@ def generateTrainingData(nx=3):
         zs.append(z)
     zs = np.array(zs)
     #print('z',zs)
-    print(sigma)
+    #print(sigma)
     a = zs*sigma
     b = np.random.normal(miu, miu/10)
     resY = np.abs(a+b)
@@ -182,13 +182,12 @@ def polyfit(t, x):
     
     return p
 
-def forecastPeriodicTrend(x):
+def randomForestRegress(x):
     #x is a time series: x = [(t,x_t)]
-    #if no X is given, predict y based solely on periodicity of y. If X is given as dependent variables of y, train a model of y = f(x), then use periodicity of x to predict y. In both cases, the output should be a function y(t).
-    #fit x(t) with a summation of five sinusoidal waves + linear trend.
+
     xs = [x[1] for x in x]
     ts = [[x[0]] for x in x]
-    regr = RandomForestRegressor(n_estimators=1).fit(ts, xs)
+    regr = RandomForestRegressor(n_estimators=50).fit(ts, xs)
     def p(t):
         t = np.array(t).reshape(-1,1)
         result = regr.predict(t)
@@ -198,7 +197,7 @@ def forecastPeriodicTrend(x):
 
 def randomForestFit(t,x):
     x = list(zip(t,x))
-    p = forecastPeriodicTrend(x)
+    p = randomForestRegress(x)
     return p
 
 def regress(t,x):
@@ -230,7 +229,7 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
     
     T += [d[0] for d in y]
     #T = sorted(list(set(T))) #common timestamp in X
-    print(max(T))
+    #print(max(T))
     maxT = max(T)
     #train-test config
     zxs = []
@@ -265,7 +264,7 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
         plt.show()
     
     
-    print('maxT',maxT)
+    #print('maxT',maxT)
     
     zxs = np.array([px(list(range(0,maxT))) for px in pxs]).T
     
@@ -275,7 +274,7 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
     
     zy = py(range(0,maxT))
     
-    plt.scatter([y[0] for y in y],[y[1] for y in y], s=0.5,alpha=0.5, color='green')
+    plt.scatter([y[0] for y in y],[y[1] for y in y], s=0.5,alpha=0.7, color='green')
     #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
     print('Training model...')
     #reg = MLPRegressor(hidden_layer_sizes=(100,), activation='tanh', max_iter=100000, solver='sgd').fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
@@ -310,11 +309,10 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
 
 
     zxs = np.array([px(list(range(0,maxT))) for px in pxs]).T
-    zy = py(range(0, maxT))
-    iqr = np.percentile(zy,75) - np.percentile(zy, 25)
-
-    zy = np.median(zy) + 2*iqr*np.tanh((zy-np.median(zy))/(2*iqr))
-    
+    # zy = py(range(0, maxT))
+    # iqr = np.percentile(zy,75) - np.percentile(zy, 25)
+    # zy = np.median(zy) + 2*iqr*np.tanh((zy-np.median(zy))/(2*iqr))
+    #plt.scatter(T,zy, c='black', alpha=0.5, s=0.1)
     T = [t for t in range(0,maxT)]
     xs = np.array([px(range(0,maxT)) for px in pxs]).T
     #xs = [[px(t) for px in pxs] for t in range(0,maxT)]
@@ -326,9 +324,9 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
     ys = np.median(ys) + 2*iqr*np.tanh((ys-np.median(ys))/(2*iqr))
     
     #ys = [p(x) for x in xs]
-    plt.scatter(T, ys, color='blue', alpha=0.5, s=0.1)
+    plt.scatter(T, ys, color='blue', alpha=0.3, s=0.1)
     
-    plt.scatter(T,zy, c='black', alpha=0.5, s=0.1)
+    
     plt.axvline(x=trainLength)
     plt.axvline(x=testLength)
     plt.show()

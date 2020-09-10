@@ -18,7 +18,7 @@ path = Path('./')
 #randomness goes from 0 to infinity
 def generateTrainingData(nx=3):
     #nx=3
-    length = int(np.random.uniform(30, 10000))
+    length = int(np.random.uniform(30, 40000))
     freqs = [int(v) for v in np.clip(np.abs(np.random.normal(10, np.random.uniform(10, 100), size=nx)), 1, length)]
     X = []
     
@@ -319,9 +319,9 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
     print('Predicting output...')
     ys = regr.predict(xs)
       
-    iqr = np.percentile(ys,75) - np.percentile(ys, 25)
+    #iqr = np.percentile(ys,75) - np.percentile(ys, 25)
 
-    ys = np.median(ys) + 2*iqr*np.tanh((ys-np.median(ys))/(2*iqr))
+    #ys = np.median(ys) + 2*iqr*np.tanh((ys-np.median(ys))/(2*iqr))
     
     #ys = [p(x) for x in xs]
     plt.scatter(T, ys, color='blue', alpha=0.3, s=0.1)

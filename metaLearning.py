@@ -11,6 +11,7 @@ from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 import warnings
+from scipy.optimize import curve_fit
 
 warnings.filterwarnings('ignore') 
 path = Path('./')
@@ -336,20 +337,45 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
     
     return regr, fi
 
-
+def fitPattern(xseries):
+    T = [dt[0] for dt in xseries]
+    #func = linear trend  + three sinusoidal waves
+    def func(t, m, b, A1, A2, A3, B1,B2,B3, C1,C2,C3):
+        
+        A = np.array([A1,A2,A3])
+        B = np.array([B1,B2,B3])
+        C = np.array([C1,C2,C3])
+        # print('A',A)
+        # print('B',B)
+        # print('C',C)
+        # print('t',t)
+        #  m*t + b + 
+        return m*t+b + np.sum([A[i]*np.sin((2*np.pi/B[i])*t+C[i]) for i in range(len(A))], axis=0)
+    
+    T = [dt[0] for dt in xseries]
+    X = [dt[1] for dt in xseries]
+    s = np.std(X)*3
+    xm = np.mean(X)
+    popt, pcov = curve_fit(func, T, X, maxfev=24000, bounds=(0,[s*2/max(T), xm] + [s]*3 + [max(T)*2]*3 + [7]*3 ))
+    
+    # t can be a number, or an array
+    f = lambda t: func(t, *popt)
+    
+    return f
     
 
 if __name__ == '__main__':
     X, y = generateTrainingData()
     regr, fi = train(X,y)
-    # train = 0.1
-    # x = X[0]
-    # T = max([x[0] for x in X[0]])
-    # print('train T', int(T*train))
-    # p = forecastPeriodicTrend([v for v in x if v[0] <int(T*train)])
+    train = 0.5
+    x = X[0]
+    T = max([x[0] for x in X[0]])
+    print('train T', int(T*train))
+    p = fitPattern([v for v in x if v[0] <int(T*train)])
     
-    # Ts = range(T)
-    # plt.scatter([x[0] for x in X[0]], [x[1] for x in X[0]], s=0.5, alpha=1, color='green')
-    # plt.scatter(Ts, [p(t) for t in Ts], s=0.5, alpha=0.5)
-    # plt.axvline(x=T*train)
+    Ts = range(T)
+    plt.scatter([x[0] for x in X[0]], [x[1] for x in X[0]], s=0.5, alpha=1, color='green')
+    plt.scatter(Ts, [p(t) for t in Ts], s=0.5, alpha=0.5)
+    plt.axvline(x=T*train)
+    plt.show()
     

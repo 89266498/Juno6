@@ -379,33 +379,17 @@ def auto_regressive(signal, p, d, q, future_count = 10):
     return buffer
 
 
-def fitPattern(xseries, test=0.3):
+def fitPattern(xseries):
     T = [dt[0] for dt in xseries]
     X = [dt[1] for dt in xseries]
+    dt = T[1]-T[0]
     
-    train = 1-test
-    trainPoints = int(train*len(X))
-    testPoints = len(X) - trainPoints
+    buffer = auto_regressive(X, p=int(len(X)*0.5), d=1, q=2, future_count=int(len(X)*0.5))
+    bufferTimes = T + [T[-1] + dt*(i+1) for i in range(int(len(X)*0.5))]
+    print(len(buffer), len(bufferTimes))
+    xout = list(zip(bufferTimes, buffer))
     
-    Xs = []
-    Ys = []
-    for i in range(len(X[:trainPoints])):
-        #print(i)
-        try:
-            Xs.append(X[i:trainPoints+i])
-            Ys.append(X[trainPoints+i])
-        except IndexError:
-            ...
-    # Xs = np.array(Xs)
-    # Ys = np.array(Ys)
-    print(Xs)
-    Xs = np.array(Xs)
-    #print(Xs)
-    regr = BayesianRidge().fit(Xs,Ys)
-    
-    p = lambda X: regr.predict(X[-trainPoints:])
-    
-    return p, trainPoints
+    return xout
     
 
 if __name__ == '__main__':
@@ -415,11 +399,11 @@ if __name__ == '__main__':
     x = X[0]
     T = max([x[0] for x in X[0]])
     print('train T', int(T*train))
-    p, trainPoints = fitPattern([v for v in x if v[0] <int(T*train)])
+    xout = fitPattern([v for v in x if v[0] <int(T*train)])
     
     #Ts = range(T)
     plt.scatter([x[0] for x in X[0]], [x[1] for x in X[0]], s=0.5, alpha=1, color='green')
-    plt.scatter([x[0] for x in X[0]], [p(x)[0] for x in X[0][i:trainPoints+i] for i in range(len(X[0]-trainPoints))], s=0.5, alpha=1, color='blue')
+    plt.scatter([x[0] for x in xout], [x[1] for x in xout], s=0.5, alpha=1, color='blue')
     plt.axvline(x=T*train)
     plt.show()
     

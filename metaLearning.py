@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestRegressor
 import warnings
 from scipy.optimize import curve_fit
 
+
 warnings.filterwarnings('ignore') 
 path = Path('./')
 
@@ -337,31 +338,74 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
     
     return regr, fi
 
-def fitPattern(xseries):
-    T = [dt[0] for dt in xseries]
-    #func = linear trend  + three sinusoidal waves
-    def func(t, m, b, A1, A2, A3, B1,B2,B3, C1,C2,C3):
-        
-        A = np.array([A1,A2,A3])
-        B = np.array([B1,B2,B3])
-        C = np.array([C1,C2,C3])
-        # print('A',A)
-        # print('B',B)
-        # print('C',C)
-        # print('t',t)
-        #  m*t + b + 
-        return m*t+b + np.sum([A[i]*np.sin((2*np.pi/B[i])*t+C[i]) for i in range(len(A))], axis=0)
+def fftApprox(y, thresh=5):
+    Y = np.fft.fft(y)
+    f = np.fft.fftfreq(len(y))
+    psd = np.abs(Y)**2/np.sum(np.abs(Y)**2)
+    threshold = np.percentile(psd, 100-thresh)
+    filtered = np.array([a if a > threshold else 0 for a in psd])
+    #print(filtered)
+    f[f==0] =  1
     
+    indices = [1 if a > 0 else 0 for a in filtered]
+    periods = (1/f)[filtered>0]
+    periods = np.round([p for p in periods if p > 0],1)
+    #print('filtered periods', periods)
+    #np.put(Y, range(cutoff, len(y)), 0.0)
+    Y = np.multiply(Y,indices)
+    ifft = np.fft.ifft(Y)
+    #ifft.real
+    return periods
+
+def moving_average(signal, period):
+    buffer = []
+    for i in range(period, len(signal)):
+        buffer.append(signal[i - period : i].mean())
+    return buffer
+
+def auto_regressive(signal, p, d, q, future_count = 10):
+    """
+    p = the order (number of time lags)
+    d = degree of differencing
+    q = the order of the moving-average
+    """
+    buffer = np.copy(signal).tolist()
+    for i in range(future_count):
+        ma = moving_average(np.array(buffer[-p:]), q)
+        forecast = buffer[-1]
+        for n in range(0, len(ma), d):
+            forecast -= buffer[-1 - n] - ma[n]
+        buffer.append(forecast)
+    return buffer
+
+
+def fitPattern(xseries, test=0.3):
     T = [dt[0] for dt in xseries]
     X = [dt[1] for dt in xseries]
-    s = np.std(X)*3
-    xm = np.mean(X)
-    popt, pcov = curve_fit(func, T, X, maxfev=24000, bounds=(0,[s*2/max(T), xm] + [s]*3 + [max(T)*2]*3 + [7]*3 ))
     
-    # t can be a number, or an array
-    f = lambda t: func(t, *popt)
+    train = 1-test
+    trainPoints = int(train*len(X))
+    testPoints = len(X) - trainPoints
     
-    return f
+    Xs = []
+    Ys = []
+    for i in range(len(X[:trainPoints])):
+        #print(i)
+        try:
+            Xs.append(X[i:trainPoints+i])
+            Ys.append(X[trainPoints+i])
+        except IndexError:
+            ...
+    # Xs = np.array(Xs)
+    # Ys = np.array(Ys)
+    print(Xs)
+    Xs = np.array(Xs)
+    #print(Xs)
+    regr = BayesianRidge().fit(Xs,Ys)
+    
+    p = lambda X: regr.predict(X[-trainPoints:])
+    
+    return p, trainPoints
     
 
 if __name__ == '__main__':
@@ -371,11 +415,11 @@ if __name__ == '__main__':
     x = X[0]
     T = max([x[0] for x in X[0]])
     print('train T', int(T*train))
-    p = fitPattern([v for v in x if v[0] <int(T*train)])
+    p, trainPoints = fitPattern([v for v in x if v[0] <int(T*train)])
     
-    Ts = range(T)
+    #Ts = range(T)
     plt.scatter([x[0] for x in X[0]], [x[1] for x in X[0]], s=0.5, alpha=1, color='green')
-    plt.scatter(Ts, [p(t) for t in Ts], s=0.5, alpha=0.5)
+    plt.scatter([x[0] for x in X[0]], [p(x)[0] for x in X[0][i:trainPoints+i] for i in range(len(X[0]-trainPoints))], s=0.5, alpha=1, color='blue')
     plt.axvline(x=T*train)
     plt.show()
     

@@ -382,14 +382,33 @@ def auto_regressive(signal, p, d, q, future_count = 10):
 def fitPattern(xseries):
     T = [dt[0] for dt in xseries]
     X = [dt[1] for dt in xseries]
-    dt = T[1]-T[0]
     
-    buffer = auto_regressive(X, p=int(len(X)*0.5), d=1, q=2, future_count=int(len(X)*0.5))
-    bufferTimes = T + [T[-1] + dt*(i+1) for i in range(int(len(X)*0.5))]
-    print(len(buffer), len(bufferTimes))
-    xout = list(zip(bufferTimes, buffer))
+    periods = fftApprox(X) * (max(T) - min(T))/(len(T)-1)
     
-    return xout
+    def func(t, b, c, A, B, C):
+        return b*t + c + A*np.sin((2*np.pi/B)*t + C) 
+     
+    errors = []
+    I = 30
+    for i in range(I):
+        popt, pcov = curve_fit(func, T, X, p0=[0, np.mean(X), np.std(X)*2, max(T)/(i+1), 1/max(T)], maxfev=3000000)
+        Xpred = func(np.array(T), *popt)
+        
+        error = np.sqrt(np.mean((np.array(Xpred)-np.array(X))**2))/np.mean(X) + 0.1*i + 0.1*popt[2]/np.mean(X) + 5*popt[3]/max(T)
+        
+        errors.append(error)
+    
+    
+    
+    plt.plot(np.array(errors).reshape(-1,1), linewidth=1)
+    plt.show()
+    
+    ind = np.argmin(errors)
+    popt, pcov = curve_fit(func, T, X, p0=[0, np.mean(X), np.std(X)*2, max(T)/(ind+1), 1/max(T)], maxfev=3000000)
+        
+    
+    p = lambda t: func(t, *popt)
+    return p
     
 
 if __name__ == '__main__':
@@ -399,11 +418,11 @@ if __name__ == '__main__':
     x = X[0]
     T = max([x[0] for x in X[0]])
     print('train T', int(T*train))
-    xout = fitPattern([v for v in x if v[0] <int(T*train)])
+    p = fitPattern([v for v in x if v[0] <int(T*train)])
     
     #Ts = range(T)
     plt.scatter([x[0] for x in X[0]], [x[1] for x in X[0]], s=0.5, alpha=1, color='green')
-    plt.scatter([x[0] for x in xout], [x[1] for x in xout], s=0.5, alpha=1, color='blue')
+    plt.scatter([x[0] for x in X[0]], [p(x[0]) for x in X[0]], s=0.5, alpha=1, color='blue')
     plt.axvline(x=T*train)
     plt.show()
     

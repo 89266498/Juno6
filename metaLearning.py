@@ -433,11 +433,21 @@ def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=T
         counts = int(len(T) * (predLength))
         T = T + [T[-1] + (count+1)*dT for count in range(counts)]
         ypred = p(T)
+        noise = np.std(np.array([v[1] for v in y]) - ypred[:len(y)])
+        bandwidth = noise*3
+        print("bandwidth", bandwidth)
+        Upp = np.clip(ypred + bandwidth, 0, np.inf)
+        Lwr = np.clip(ypred - bandwidth, 0, np.inf)
         
-        plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
-        plt.scatter(T, ypred, s=1, alpha=1, color='black')
-        plt.axvline(x=maxT)
-        plt.show()
+        
+        
+        if plot:
+            plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
+            plt.scatter(T, ypred, s=1, alpha=1, color='black')
+            plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
+            plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
+            plt.axvline(x=maxT)
+            plt.show()
     
     else:
         print('Dependent inputs time-series detected, using inputs to predict output...')
@@ -473,29 +483,38 @@ def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=T
         c = np.array([ypred1, ypred2])
         ymax = np.max(c, axis=0)
         ymin = np.min(c, axis=0)
-        ypred = np.mean(c, axis=0)
+        ypred = np.clip(np.mean(c, axis=0), 0, np.inf)
         
-        noise = np.std([v[1] for v in y])
-        bandwidth = noise*3
-        print("bandwidth", bandwidth)
-        Upp = np.mean(np.array([ypred + bandwidth, ymax]), axis=0)
-        Lwr = np.abs(np.mean(np.array([ypred - bandwidth, ymin]), axis=0))
+        noise = np.std(np.array([v[1] for v in y]) - ypred[:len(y)])
+        bandwidth = noise*6
+        #print("bandwidth", bandwidth)
+        Upp = np.clip(np.mean(np.array([ypred + bandwidth, ymax]), axis=0), 0, np.inf)
+        Lwr = np.clip(np.mean(np.array([ypred - bandwidth, ymin]), axis=0), 0, np.inf)
+        # Upp = ypred + bandwidth
+        # Lwr = np.abs(ypred - bandwidth)
         
-        
-        plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
-        plt.scatter(T, ypred, s=0.5, alpha=1, color='blue')
-        plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
-        plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
-        plt.axvline(x=maxT)
-        plt.show()
+        if plot:
+            plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
+            plt.scatter(T, ypred, s=0.5, alpha=1, color='blue')
+            plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
+            plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
+            plt.axvline(x=maxT)
+            plt.show()
     
+    yout = list(zip(T, ypred))
+    yupp = list(zip(T, Upp))
+    ylwr = list(zip(T, Lwr))
     
+    anomalies = [v for i, v in enumerate(y) if v[1] > yupp[i][1] or v[1] < ylwr[i][1]]
+    anomalyRate = len(anomalies)/len(y)
+    print('anomalyRate', anomalyRate)
+    return yout, yupp, ylwr, anomalyRate
 
 if __name__ == '__main__':
     X, y = generateTrainingData()
     regr, fi = train(X,y)
     #train = 0.5
-    #forecast(y,X=None, regr=None)
-    forecast(y,X, regr)
+    ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
+    ypred, yhigh, ylow, anomalyRate = forecast(y,X, regr)
     
     

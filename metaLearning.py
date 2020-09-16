@@ -382,7 +382,7 @@ def auto_regressive(signal, p, d, q, future_count = 10):
 def fitPattern(xseries):
     T = [dt[0] for dt in xseries]
     X = [dt[1] for dt in xseries]
-    
+    train = max(int(0.2*len(T)), 5)
     periods = fftApprox(X) * (max(T) - min(T))/(len(T)-1)
     
     def func(t, b, c, A, B, C):
@@ -391,10 +391,13 @@ def fitPattern(xseries):
     errors = []
     I = 30
     for i in range(I):
-        popt, pcov = curve_fit(func, T, X, p0=[0, np.mean(X), np.std(X)*2, max(T)/(i+1), 1/max(T)], maxfev=3000000)
+        indices = random.sample(range(len(T)), train)
+        trT = [t for ind, t in enumerate(T) if ind in indices]
+        trX = [x for ind, x in enumerate(X) if ind in indices]
+        popt, pcov = curve_fit(func, trT, trX, p0=[0, np.mean(X), np.std(X)*2, max(T)/(i+1), 1/max(T)], maxfev=3000000)
         Xpred = func(np.array(T), *popt)
         
-        error = np.sqrt(np.mean((np.array(Xpred)-np.array(X))**2))/np.mean(X) + 0.1*i + 0.1*popt[2]/np.mean(X) + 5*popt[3]/max(T)
+        error = np.sqrt(np.mean((np.array(Xpred)-np.array(X))**2))/np.mean(X) #+ 0.2*i + 0.1*popt[2]/np.mean(X) + 0*popt[3]/max(T)
         
         errors.append(error)
     

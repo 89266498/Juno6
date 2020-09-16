@@ -432,7 +432,7 @@ def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=T
         dT = T[-1] - T[-2]
         counts = int(len(T) * (predLength))
         T = T + [T[-1] + (count+1)*dT for count in range(counts)]
-        ypred = p(T)
+        ypred = np.clip(p(T), 0, np.inf)
         noise = np.std(np.array([v[1] for v in y]) - ypred[:len(y)])
         bandwidth = noise*3
         print("bandwidth", bandwidth)

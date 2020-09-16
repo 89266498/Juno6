@@ -282,7 +282,7 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
     #reg = MLPRegressor(hidden_layer_sizes=(100,), activation='tanh', max_iter=100000, solver='sgd').fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
     if featureImportance:
         print('Analyzing Gini Feature Importances...')
-        regr = RandomForestRegressor(n_estimators=100).fit(np.array(zxs)[:trainLength], zy[:trainLength])
+        regr = RandomForestRegressor(n_estimators=100).fit(np.array(zxs), zy)
         fi = regr.feature_importances_
     print('Analyzing underlying relationships between inputs and outputs...')
     regr = BayesianRidge(normalize=True).fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,)) #RandomForestRegressor(n_estimators=100)
@@ -311,6 +311,7 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
 
 
     zxs = np.array([px(list(range(0,maxT))) for px in pxs]).T
+    zy = py(range(0,maxT))
     # zy = py(range(0, maxT))
     # iqr = np.percentile(zy,75) - np.percentile(zy, 25)
     # zy = np.median(zy) + 2*iqr*np.tanh((zy-np.median(zy))/(2*iqr))
@@ -335,10 +336,13 @@ def train(X, y, featureImportance=True, train=0.5, test=0.25):
     # pY = np.poly1d(np.polyfit(ys[:1000],zy[:1000],3))
     # zY = [pY(y) for y in ys]
     # plt.plot([t for t in range(0,maxT, 100)], zY, linewidth=1, color='yellow')
-    
+    print("Retraining relationships model on full dataset...")
+    regr = BayesianRidge(normalize=True).fit(np.array(zxs), zy)
+    print("Model successfully trained...")
     return regr, fi
 
 def fftApprox(y, thresh=5):
+    print("Performing Fast Fourier Transform to extract periodicities...")
     Y = np.fft.fft(y)
     f = np.fft.fftfreq(len(y))
     psd = np.abs(Y)**2/np.sum(np.abs(Y)**2)
@@ -352,8 +356,8 @@ def fftApprox(y, thresh=5):
     periods = np.round([p for p in periods if p > 0],1)
     #print('filtered periods', periods)
     #np.put(Y, range(cutoff, len(y)), 0.0)
-    Y = np.multiply(Y,indices)
-    ifft = np.fft.ifft(Y)
+    #Y = np.multiply(Y,indices)
+    #ifft = np.fft.ifft(Y)
     #ifft.real
     return periods
 
@@ -379,7 +383,8 @@ def auto_regressive(signal, p, d, q, future_count = 10):
     return buffer
 
 
-def fitPattern(xseries):
+def fitPattern(xseries, plot=False):
+    
     T = [dt[0] for dt in xseries]
     X = [dt[1] for dt in xseries]
     train = max(int(0.2*len(T)), 5)
@@ -401,31 +406,72 @@ def fitPattern(xseries):
         
         errors.append(error)
     
+    if plot:
     
-    
-    plt.plot(np.array(errors).reshape(-1,1), linewidth=1)
-    plt.show()
+        plt.plot(np.array(errors).reshape(-1,1), linewidth=1)
+        plt.show()
     
     ind = np.argmin(errors)
     popt, pcov = curve_fit(func, T, X, p0=[0, np.mean(X), np.std(X)*2, max(T)/(ind+1), 1/max(T)], maxfev=3000000)
         
-    
-    p = lambda t: func(t, *popt)
+    f = lambda t: func(t, *popt)
+    p = lambda t: list(map(f,t))
     return p
+    
+def forecast(y, X=None, regr=None, predLength=0.2, plot=True):
+    print("Forecasting time-series...")
+    pxs = []
+
+    
+    if not X:
+        print("Predicting time-series without assuming any underlying relationships...")
+        T = [v[0] for v in y]
+        p = fitPattern(y) # <int(T*train)
+        maxT = np.max(T)
+        
+        dT = T[-1] - T[-2]
+        counts = int(len(T) * (1+predLength))
+        T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+        ypred = p(T)
+        
+        plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
+        plt.scatter(T, ypred, s=1, alpha=1, color='black')
+        plt.axvline(x=maxT)
+        #plt.show()
+    
+    else:
+        print('Dependent inputs time-series detected, using inputs to predict output...')
+        for i, x in enumerate(X):
+            #print('x', x)
+            
+            # print('train T', int(T*train))
+            print("Analyzing individual input time-series...")
+            p = fitPattern(x) # <int(T*train)
+            
+            pxs.append(p)
+        
+        T = [v[0] for v in y]
+        #print(T)
+        maxT = np.max(T)
+        dT = T[-1] - T[-2]
+        counts = int(len(T) * (1+predLength))
+        T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+        #print(T)
+        PX = np.array([p(T) for p in pxs]).T
+        ypred = regr.predict(PX)
+    
+        plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
+        plt.scatter(T, ypred, s=0.5, alpha=1, color='blue')
+        plt.axvline(x=maxT)
+        #plt.show()
+    
     
 
 if __name__ == '__main__':
     X, y = generateTrainingData()
     regr, fi = train(X,y)
-    train = 0.5
-    x = X[0]
-    T = max([x[0] for x in X[0]])
-    print('train T', int(T*train))
-    p = fitPattern([v for v in x if v[0] <int(T*train)])
+    #train = 0.5
+    forecast(y,X=None, regr=None)
+    forecast(y,X, regr)
     
-    #Ts = range(T)
-    plt.scatter([x[0] for x in X[0]], [x[1] for x in X[0]], s=0.5, alpha=1, color='green')
-    plt.scatter([x[0] for x in X[0]], [p(x[0]) for x in X[0]], s=0.5, alpha=1, color='blue')
-    plt.axvline(x=T*train)
-    plt.show()
     

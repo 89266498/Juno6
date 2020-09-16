@@ -21,7 +21,7 @@ path = Path('./')
 def generateTrainingData(nx=3):
     #nx=3
     length = int(np.random.uniform(30, 40000))
-    freqs = [int(v) for v in np.clip(np.abs(np.random.normal(10, np.random.uniform(10, 100), size=nx)), 1, length)]
+    freqs = [int(v) for v in np.clip(np.abs(np.random.normal(10, np.random.uniform(10, 100), size=nx)), 5, length)]
     X = []
     
     for i in range(nx):
@@ -418,7 +418,7 @@ def fitPattern(xseries, plot=False):
     p = lambda t: list(map(f,t))
     return p
     
-def forecast(y, X=None, regr=None, predLength=0.2, plot=True):
+def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=True):
     print("Forecasting time-series...")
     pxs = []
 
@@ -430,14 +430,14 @@ def forecast(y, X=None, regr=None, predLength=0.2, plot=True):
         maxT = np.max(T)
         
         dT = T[-1] - T[-2]
-        counts = int(len(T) * (1+predLength))
+        counts = int(len(T) * (predLength))
         T = T + [T[-1] + (count+1)*dT for count in range(counts)]
         ypred = p(T)
         
         plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
         plt.scatter(T, ypred, s=1, alpha=1, color='black')
         plt.axvline(x=maxT)
-        #plt.show()
+        plt.show()
     
     else:
         print('Dependent inputs time-series detected, using inputs to predict output...')
@@ -454,16 +454,40 @@ def forecast(y, X=None, regr=None, predLength=0.2, plot=True):
         #print(T)
         maxT = np.max(T)
         dT = T[-1] - T[-2]
-        counts = int(len(T) * (1+predLength))
+        counts = int(len(T) * (predLength))
         T = T + [T[-1] + (count+1)*dT for count in range(counts)]
         #print(T)
         PX = np.array([p(T) for p in pxs]).T
-        ypred = regr.predict(PX)
-    
+        ypred1 = regr.predict(PX)
+        
+        T = [v[0] for v in y]
+        p = fitPattern(y) # <int(T*train)
+        maxT = np.max(T)
+        
+        dT = T[-1] - T[-2]
+        counts = int(len(T) * (predLength))
+        T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+        ypred2 = p(T)
+        
+        #ypred = (ypred1 + ypred2)/2
+        c = np.array([ypred1, ypred2])
+        ymax = np.max(c, axis=0)
+        ymin = np.min(c, axis=0)
+        ypred = np.mean(c, axis=0)
+        
+        noise = np.std([v[1] for v in y])
+        bandwidth = noise*3
+        print("bandwidth", bandwidth)
+        Upp = np.mean(np.array([ypred + bandwidth, ymax]), axis=0)
+        Lwr = np.abs(np.mean(np.array([ypred - bandwidth, ymin]), axis=0))
+        
+        
         plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
         plt.scatter(T, ypred, s=0.5, alpha=1, color='blue')
+        plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
+        plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
         plt.axvline(x=maxT)
-        #plt.show()
+        plt.show()
     
     
 
@@ -471,7 +495,7 @@ if __name__ == '__main__':
     X, y = generateTrainingData()
     regr, fi = train(X,y)
     #train = 0.5
-    forecast(y,X=None, regr=None)
+    #forecast(y,X=None, regr=None)
     forecast(y,X, regr)
     
     

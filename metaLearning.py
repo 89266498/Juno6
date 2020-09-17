@@ -220,7 +220,7 @@ def regress(t,x):
     ...
     
     
-def train(X, y, featureImportance=True, train=0.5, test=0.25):
+def train(y, X, featureImportance=True, train=0.5, test=0.25):
     print("Pulling inputs and output data from time series...")
     #maxT = max([x[-1][0] for x in X])
     
@@ -435,7 +435,7 @@ def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=T
         ypred = np.clip(p(T), 0, np.inf)
         noise = np.std(np.array([v[1] for v in y]) - ypred[:len(y)])
         bandwidth = noise*3
-        print("bandwidth", bandwidth)
+        #print("bandwidth", bandwidth)
         Upp = np.clip(ypred + bandwidth, 0, np.inf)
         Lwr = np.clip(ypred - bandwidth, 0, np.inf)
         
@@ -510,11 +510,21 @@ def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=T
     print('anomalyRate', anomalyRate)
     return yout, yupp, ylwr, anomalyRate
 
+def controlStrategy(y,X, control, mode, constraints, regr):
+    #X is a list of dependent time-series, y is the target time-series.
+    #control is a list of control variables (indices for X)
+    #mode: min or max
+    #constraints is list of tuple for which the keys are constrained.
+    #regr is the model y = regr.predict(X)
+
+    # regr 
+    ...
+    
 if __name__ == '__main__':
     X, y = generateTrainingData()
-    regr, fi = train(X,y)
+    regr, fi = train(y,X)
     #train = 0.5
-    ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
+    #ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
     ypred, yhigh, ylow, anomalyRate = forecast(y,X, regr)
     
     

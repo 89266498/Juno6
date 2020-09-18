@@ -505,8 +505,9 @@ def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=T
     yupp = list(zip(T, Upp))
     ylwr = list(zip(T, Lwr))
     
-    anomalies = [v for i, v in enumerate(y) if v[1] > yupp[i][1] or v[1] < ylwr[i][1]]
+    anomalies = [v for i, v in enumerate(y) if not ylwr[i][1] <= v[1] <= yupp[i][1]]
     anomalyRate = len(anomalies)/len(y)
+    print('anomalies', anomalies)
     print('anomalyRate', anomalyRate)
     return yout, yupp, ylwr, anomalyRate
 

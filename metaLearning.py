@@ -139,7 +139,7 @@ def generateTrainingData(nx=3):
         if t in times:
             ys.append([t,y])
     
-    return outX, ys
+    return ys, outX
 
 def polyfitCV(t, x):
     #n = int(trainPortion*len(t))
@@ -220,7 +220,7 @@ def regress(t,x):
     ...
     
     
-def train(y, X, featureImportance=True, train=0.5, test=0.25):
+def train(y, X, train=0.5, test=0.25):
     print("Pulling inputs and output data from time series...")
     #maxT = max([x[-1][0] for x in X])
     
@@ -280,10 +280,10 @@ def train(y, X, featureImportance=True, train=0.5, test=0.25):
     #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
     print('Training model...')
     #reg = MLPRegressor(hidden_layer_sizes=(100,), activation='tanh', max_iter=100000, solver='sgd').fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
-    if featureImportance:
-        print('Analyzing Gini Feature Importances...')
-        regr = RandomForestRegressor(n_estimators=100).fit(np.array(zxs), zy)
-        fi = regr.feature_importances_
+    
+    print('Analyzing Gini Feature Importances...')
+    regr = RandomForestRegressor(n_estimators=100).fit(np.array(zxs), zy)
+    fi = regr.feature_importances_
     print('Analyzing underlying relationships between inputs and outputs...')
     regr = BayesianRidge(normalize=True).fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,)) #RandomForestRegressor(n_estimators=100)
     #P = regress(np.array(zxs)[:trainLength], zy[:trainLength])
@@ -337,9 +337,9 @@ def train(y, X, featureImportance=True, train=0.5, test=0.25):
     # zY = [pY(y) for y in ys]
     # plt.plot([t for t in range(0,maxT, 100)], zY, linewidth=1, color='yellow')
     print("Retraining relationships model on full dataset...")
-    regr = BayesianRidge(normalize=True).fit(np.array(zxs), zy)
+    model = BayesianRidge(normalize=True).fit(np.array(zxs), zy)
     print("Model successfully trained...")
-    return regr, fi
+    return model, fi
 
 def fftApprox(y, thresh=5):
     print("Performing Fast Fourier Transform to extract periodicities...")
@@ -418,7 +418,8 @@ def fitPattern(xseries, plot=False):
     p = lambda t: list(map(f,t))
     return p
     
-def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=True):
+def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
+    
     print("Forecasting time-series...")
     pxs = []
 
@@ -430,6 +431,8 @@ def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=T
         maxT = np.max(T)
         
         dT = T[-1] - T[-2]
+        if fast:
+            dT = dT * 100
         counts = int(len(T) * (predLength))
         T = T + [T[-1] + (count+1)*dT for count in range(counts)]
         ypred = np.clip(p(T), 0, np.inf)
@@ -464,17 +467,21 @@ def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=T
         #print(T)
         maxT = np.max(T)
         dT = T[-1] - T[-2]
+        if fast:
+            dT = dT * 100
         counts = int(len(T) * (predLength))
         T = T + [T[-1] + (count+1)*dT for count in range(counts)]
         #print(T)
         PX = np.array([p(T) for p in pxs]).T
-        ypred1 = regr.predict(PX)
+        ypred1 = model.predict(PX)
         
         T = [v[0] for v in y]
         p = fitPattern(y) # <int(T*train)
         maxT = np.max(T)
         
         dT = T[-1] - T[-2]
+        if fast:
+            dT = dT * 100
         counts = int(len(T) * (predLength))
         T = T + [T[-1] + (count+1)*dT for count in range(counts)]
         ypred2 = p(T)
@@ -509,23 +516,113 @@ def forecast(y, X=None, regr=None, predLength=0.3, plot=True, anomalyDetection=T
     anomalyRate = len(anomalies)/len(y)
     print('anomalies', anomalies)
     print('anomalyRate', anomalyRate)
-    return yout, yupp, ylwr, anomalyRate
+    
+    ydict = {'pred':yout, 'high': yupp, 'low': ylwr, 'anomalyRate': anomalyRate, 'anomalies': anomalies}
+    
+    return ydict
 
-def controlStrategy(y,X, control, mode, constraints, regr):
+def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
     #X is a list of dependent time-series, y is the target time-series.
     #control is a list of control variables (indices for X)
     #mode: min or max
-    #constraints is list of tuple for which the keys are constrained.
     #regr is the model y = regr.predict(X)
+    
+    #learning the constraints (control boundaries)
+    
+    if not control:
+        print('No control variables defined, nothing to control...')
+        return None, None
+    
+    print('Figuring out feasible region for output variable...')
+    ydict = forecast(y,X, model, predLength=predLength)
+    tmax = y[-1][0]
+    print('tmax', tmax)
+    print('Figuring out feasible regions for input variables...')
+    Xdict = [forecast(x, predLength=predLength) for x in X]
+    #print([[v[1] for v in x['low']] for x in Xdict])
+    # Xlow = [np.percentile([v[1] for v in x['pred'][:int(tmax*(1-predLength))]], 25) for x in Xdict]
+    # Xhigh = [np.percentile([v[1] for v in x['high'][:int(tmax*(1-predLength))]], 75) for x in Xdict]
+    
+    Xlow = [np.percentile([v[1] for v in x], 5) for x in X]
+    Xhigh = [np.percentile([v[1] for v in x], 95) for x in X]
+    print('Xlow', Xlow)
+    print('Xhigh', Xhigh)
+    
+    tpred = ydict['pred'][-1][0]
+    print('Prediction tpred',tpred)
+    
+    #synchronizing xinput on tpred
+    print('Synchronizing inputs on tpred..')
+    xin = [x['pred'][-1000:] for x in Xdict]
+    print([x['pred'][-1] for x in Xdict])
+    
+    pxs = [fitPattern(x) for x in xin]
+    
+    xbase = np.array([px([tpred])[0] for px in pxs])
+    
+    print('Using control variables to define Evolutionary Strategy variance...')
+    variance = xbase/10
+    #print(variance)
+    for i, var in enumerate(variance):
+        print('control', control)
+        if i not in control:
+            variance[i] = 0
+    
+    xopt = xbase
+    print('Using Evolutionary Strategy to find optimal control...')
+    for iteration in range(100):
+        print('iteration', iteration)
+        xin = np.array([np.random.normal(xopt, variance) for i in range(30)] + [xopt])
+        #print('xinput',xin)
+        xin = [np.clip(x, Xlow, Xhigh) for x in xin]
 
-    # regr 
+        yout = model.predict(xin)
+        #print('yout',yout)
+        
+        tolerance = np.std(yout)/np.mean(yout)
+        print('tolerance', tolerance)
+        xopt = xin[np.argmax(yout)]
+        yopt = yout[np.argmax(yout)]
+
+    
+        variance /= 2
+        if tolerance < 0.0001:
+            print('Best solution found by convergence...')
+            break
+        
+    print('control', control)
+    tlast = y[-1][0]
+    xlast = [x[-1][1] for x in X]
+    ylast = y[-1][1]
+    print('tlast', tlast)
+    print('Xlast', xlast)
+    print('Ylast', ylast)
+    print('\n')
+    
+    ybase = model.predict([xbase])[0]
+    print('tbase', tpred)
+    print('xbase', xbase)
+    print('ybase', ybase)
+    print('\n')
+    
+    topt = tpred
+    print('topt', tpred)
+    print('xopt', xopt)
+    print('yopt', yopt)
+    
+    result = {'last':{'t': tlast, 'X':xlast, 'y':ylast},
+              'base':{'t':tpred, 'X':xbase, 'y':ybase},
+              'opt':{'t':tpred, 'X':xopt, 'y':yopt}}
+    
+    return result
     ...
     
 if __name__ == '__main__':
-    X, y = generateTrainingData()
-    regr, fi = train(y,X)
-    #train = 0.5
-    #ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
-    ypred, yhigh, ylow, anomalyRate = forecast(y,X, regr)
+    y, X = generateTrainingData()
+    model, fi = train(y,X)
     
+    #ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
+    ydict = forecast(y,X, model, plot=True, predLength=1)
+    
+    strategy = controlStrategy(y, X, model=model, control=[2], maximize=True, predLength=1)
     

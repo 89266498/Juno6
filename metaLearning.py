@@ -132,8 +132,9 @@ def generateTrainingData(nx=3):
         outX.append(xs)
     
     #freq of Y
-    freq = int(np.clip(np.abs(np.random.normal(10, np.random.uniform(10, 100))), 1, length))
+    freq = int(np.clip(np.abs(np.random.normal(10, np.random.uniform(10, 100))), 5, length))
     times = [j*freq for j in range(int(length/freq))]
+    print('generating output:','freq',freq, 'length',max(times))
     ys = []
     for t, y in outY:
         if t in times:
@@ -356,10 +357,11 @@ def fftApprox(y, thresh=5):
     periods = np.round([p for p in periods if p > 0],1)
     #print('filtered periods', periods)
     #np.put(Y, range(cutoff, len(y)), 0.0)
-    #Y = np.multiply(Y,indices)
-    #ifft = np.fft.ifft(Y)
-    #ifft.real
-    return periods
+    # Y = np.multiply(Y,indices)
+    # ifft = np.fft.ifft(Y)
+    # ifft.real
+    #print('psd', psd[filtered>0])
+    return periods, psd[filtered>0]
 
 def moving_average(signal, period):
     buffer = []
@@ -387,19 +389,29 @@ def fitPattern(xseries, plot=False):
     
     T = [dt[0] for dt in xseries]
     X = [dt[1] for dt in xseries]
-    train = max(int(0.2*len(T)), 5)
-    periods = fftApprox(X) * (max(T) - min(T))/(len(T)-1)
-    
+    train = max(int(0.5*len(T)), 1)
+    periods, psd = fftApprox(X, thresh=5) 
+    periods *= (max(T) - min(T))/(len(T)-1)
+    l = max(T) - min(T)
+    if len(periods) > 30:
+        step = 3
+    elif len(periods) > 120:
+        step = 5
+    else:
+        step = 1
+    periods = list(set(list(periods)[1:: step])) + [l*2, l*3, l*4]
+    #periods = periods
+    print('periods',periods)
     def func(t, b, c, A, B, C):
-        return b*t + c + A*np.sin((2*np.pi/B)*t + C) 
+        return b*t + c + A*np.sin((2*np.pi/B)*t + C)# + D*np.tanh(E*t+F)
      
     errors = []
-    I = 30
-    for i in range(I):
+    
+    for period in periods:
         indices = random.sample(range(len(T)), train)
         trT = [t for ind, t in enumerate(T) if ind in indices]
         trX = [x for ind, x in enumerate(X) if ind in indices]
-        popt, pcov = curve_fit(func, trT, trX, p0=[0, np.mean(X), np.std(X)*2, max(T)/(i+1), 1/max(T)], maxfev=3000000)
+        popt, pcov = curve_fit(func, trT, trX, p0=[0, np.mean(trX), np.std(trX)*2, period , 1/max(trT)], maxfev=3000000) #max(trT)/(i+1), np.max(trX), 1/max(trT), 1/max(trT)
         Xpred = func(np.array(T), *popt)
         
         error = np.sqrt(np.mean((np.array(Xpred)-np.array(X))**2))/np.mean(X) #+ 0.2*i + 0.1*popt[2]/np.mean(X) + 0*popt[3]/max(T)
@@ -411,8 +423,10 @@ def fitPattern(xseries, plot=False):
         plt.plot(np.array(errors).reshape(-1,1), linewidth=1)
         plt.show()
     
+    #period = periods[np.argmax(psd)]
+    
     ind = np.argmin(errors)
-    popt, pcov = curve_fit(func, T, X, p0=[0, np.mean(X), np.std(X)*2, max(T)/(ind+1), 1/max(T)], maxfev=3000000)
+    popt, pcov = curve_fit(func, T, X, p0=[0, np.mean(X), np.std(X)*2, periods[ind], 1/max(T),], maxfev=3000000) # np.max(X), 1/max(T), 1/max(T)
         
     f = lambda t: func(t, *popt)
     p = lambda t: list(map(f,t))
@@ -532,6 +546,8 @@ def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
     if not control:
         print('No control variables defined, nothing to control...')
         return None, None
+    elif control == [-1]:
+        control = list(range(len(X)))
     
     print('Figuring out feasible region for output variable...')
     ydict = forecast(y,X, model, predLength=predLength)
@@ -545,9 +561,7 @@ def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
     
     Xlow = [np.percentile([v[1] for v in x], 5) for x in X]
     Xhigh = [np.percentile([v[1] for v in x], 95) for x in X]
-    print('Xlow', Xlow)
-    print('Xhigh', Xhigh)
-    
+
     tpred = ydict['pred'][-1][0]
     print('Prediction tpred',tpred)
     
@@ -556,7 +570,7 @@ def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
     xin = [x['pred'][-1000:] for x in Xdict]
     print([x['pred'][-1] for x in Xdict])
     
-    pxs = [fitPattern(x) for x in xin]
+    pxs = [regress([v[0] for v in x], [v[1] for v in x]) for x in xin] #fitPattern(x)
     
     xbase = np.array([px([tpred])[0] for px in pxs])
     
@@ -567,6 +581,15 @@ def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
         print('control', control)
         if i not in control:
             variance[i] = 0
+            Xlow[i] = 0
+            Xhigh[i] = np.inf
+    print('Xlow', Xlow)
+    print('Xhigh', Xhigh)
+    
+    if maximize:
+        optimize = np.argmax
+    else:
+        optimize = np.argmin
     
     xopt = xbase
     print('Using Evolutionary Strategy to find optimal control...')
@@ -576,16 +599,19 @@ def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
         #print('xinput',xin)
         xin = [np.clip(x, Xlow, Xhigh) for x in xin]
 
-        yout = model.predict(xin)
+        yout = np.clip(model.predict(xin), 0, np.inf)
         #print('yout',yout)
         
         tolerance = np.std(yout)/np.mean(yout)
         print('tolerance', tolerance)
-        xopt = xin[np.argmax(yout)]
-        yopt = yout[np.argmax(yout)]
-
-    
-        variance /= 2
+        ind = optimize(yout)
+        xopt1 = xin[ind]
+        dx = np.mean(np.abs(np.array(xopt) - np.array(xopt1)))/np.mean(xopt)
+        yopt = yout[ind]
+        xopt = xopt1
+        print('dx', dx)
+        variance *= dx*10*(iteration+1)
+        print('variance', variance)
         if tolerance < 0.0001:
             print('Best solution found by convergence...')
             break
@@ -599,7 +625,7 @@ def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
     print('Ylast', ylast)
     print('\n')
     
-    ybase = model.predict([xbase])[0]
+    ybase = np.clip(model.predict([xbase])[0],0, np.inf)
     print('tbase', tpred)
     print('xbase', xbase)
     print('ybase', ybase)
@@ -624,5 +650,5 @@ if __name__ == '__main__':
     #ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
     ydict = forecast(y,X, model, plot=True, predLength=1)
     
-    strategy = controlStrategy(y, X, model=model, control=[2], maximize=True, predLength=1)
+    strategy = controlStrategy(y, X, model=model, control=[0], maximize=True, predLength=1)
     

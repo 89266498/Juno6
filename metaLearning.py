@@ -12,15 +12,17 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 import warnings
 from scipy.optimize import curve_fit
-
+from multiprocessing import Pool
+import pickle 
 
 warnings.filterwarnings('ignore') 
 path = Path('./')
 
 #randomness goes from 0 to infinity
-def generateTrainingData(nx=3):
+def generateTrainingData(nx=3, length=None):
     #nx=3
-    length = int(np.random.uniform(30, 40000))
+    if not length:
+        length = int(np.random.uniform(30, 40000))
     freqs = [int(v) for v in np.clip(np.abs(np.random.normal(10, np.random.uniform(10, 100), size=nx)), 5, length)]
     X = []
     
@@ -142,6 +144,49 @@ def generateTrainingData(nx=3):
     
     return ys, outX
 
+def generateMultiData(basenx=10, maxRel=20, length=30000, save=True):
+    iterations = random.choice(range(1, maxRel))
+    print('Relationships count', iterations)
+    timeSeries = []
+    for iteration in range(iterations):
+        print('Generating relationship', iteration+1, '/', iterations)
+        y, X = generateTrainingData(nx=random.choice(range(1,basenx)), length=length)
+        timeSeries.append(y)
+        timeSeries += X
+        
+    random.shuffle(timeSeries)
+    
+    
+    
+    if save:
+        print("Saving generated data...")
+        with open(path / 'data' / 'fake-data' / 'randTimeSeries.json', 'w') as f:
+            f.write(json.dumps(timeSeries))
+    return timeSeries
+
+def readData():
+    print('Reading data...')
+    with open(path / 'data' / 'fake-data' / 'randTimeSeries.json', 'r') as f:
+        data = json.loads(f.read())
+    return data
+
+def ts2d(timeSeries):
+    print('Converting timeSeries to dictionary...')
+    fids = range(len(timeSeries))
+    d = [{'fid': fid, 'series': timeSeries[fid]} for fid in fids]
+    return d
+
+def d2ts(d):
+    print('Converting dictionary to timeSeries...')
+    timeSeries = []
+    fids = []
+    for row in d:
+        timeSeries.append(row['series'])
+        fids.append(row['fid'])
+    return timeSeries, fids
+
+
+
 def polyfitCV(t, x):
     #n = int(trainPortion*len(t))
     #trT, teT = t[:n], t[n:]
@@ -221,7 +266,11 @@ def regress(t,x):
     ...
     
     
-def train(y, X, train=0.5, test=0.25):
+def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
+    if fast:
+        stepRatio = 1000
+    else:
+        stepRatio = 1
     print("Pulling inputs and output data from time series...")
     #maxT = max([x[-1][0] for x in X])
     
@@ -240,8 +289,9 @@ def train(y, X, train=0.5, test=0.25):
     trainLength = int(maxT*train)
     testLength = int(trainLength*((train+test)/train))
     
-    trainT = [y[0] for y in y if y[0] <= trainLength]
-    trainY = [y[1] for y in y if y[0] <= trainLength]
+    trainT = [y[0] for i, y in enumerate(y) if y[0] <= trainLength and i % stepRatio == 0]
+    trainY = [y[1] for i, y in enumerate(y) if y[0] <= trainLength and i % stepRatio == 0]
+
     n = len(trainY)
     
     
@@ -258,13 +308,14 @@ def train(y, X, train=0.5, test=0.25):
     
     pxs = []
     for x in X:
-        px = regress([x[0] for x in x if x[0] <= trainLength],[x[1] for x in x if x[0] <= trainLength])
+        px = regress([x[0] for i, x in enumerate(x) if x[0] <= trainLength and i % stepRatio == 0],[x[1] for i, x in enumerate(x) if x[0] <= trainLength and i % stepRatio == 0])
         pxs.append(px)
-        plt.scatter([x[0] for x in x],[x[1] for x in x], color='blue', s=0.5)
-        #plt.plot([x[0] for x in x], [px(x[0])  for x in x], linewidth=2, color='blue')
-        plt.axvline(x=trainLength)
-        plt.axvline(x=testLength)
-        plt.show()
+        if plot:
+            plt.scatter([x[0] for x in x],[x[1] for x in x], color='blue', s=0.5)
+            #plt.plot([x[0] for x in x], [px(x[0])  for x in x], linewidth=2, color='blue')
+            plt.axvline(x=trainLength)
+            plt.axvline(x=testLength)
+            plt.show()
     
     
     #print('maxT',maxT)
@@ -276,23 +327,25 @@ def train(y, X, train=0.5, test=0.25):
     #     zxs.append(zx)
     
     zy = py(range(0,maxT))
-    
-    plt.scatter([y[0] for y in y],[y[1] for y in y], s=0.5,alpha=0.7, color='green')
+    if plot:
+        plt.scatter([y[0] for y in y],[y[1] for y in y], s=0.5,alpha=0.7, color='green')
     #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
     print('Training model...')
     #reg = MLPRegressor(hidden_layer_sizes=(100,), activation='tanh', max_iter=100000, solver='sgd').fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,))
     
     print('Analyzing Gini Feature Importances...')
-    regr = RandomForestRegressor(n_estimators=100).fit(np.array(zxs), zy)
+    regr = RandomForestRegressor(n_estimators=10).fit(np.array(zxs), zy)
     fi = regr.feature_importances_
     print('Analyzing underlying relationships between inputs and outputs...')
-    regr = BayesianRidge(normalize=True).fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,)) #RandomForestRegressor(n_estimators=100)
+    if testing:
+        regr = BayesianRidge(normalize=True).fit(np.array(zxs)[:trainLength], zy[:trainLength])#MLPRegressor(hidden_layer_sizes=(2,)) #RandomForestRegressor(n_estimators=100)
     #P = regress(np.array(zxs)[:trainLength], zy[:trainLength])
     ##########################
     #TESTING
     #redo polyfit for test data
-    print('Testing...')
-    py = regress([y[0] for y in y],[y[1] for y in y])
+    if testing:
+        print('Testing...')
+    py = regress([y[0] for i, y in enumerate(y) if i % stepRatio == 0],[y[1] for i, y in enumerate(y) if i % stepRatio == 0])
     #plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
     #plt.plot([t for t in range(0,maxT,10)], [py(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
     #plt.show()
@@ -302,7 +355,7 @@ def train(y, X, train=0.5, test=0.25):
     
     for x in X:
         #Overfitting
-        px = regress([x[0] for x in x],[x[1] for x in x])
+        px = regress([x[0] for i, x in enumerate(x) if i % stepRatio == 0],[x[1] for i, x in enumerate(x) if i % stepRatio == 0])
         pxs.append(px)
         #plt.scatter([x[0] for x in x],[x[1] for x in x], color='green', s=0.5)
         #plt.plot([t for t in range(0,maxT,10)], [px(t) for t in range(0,maxT,10)], linewidth=2, color='blue')
@@ -317,23 +370,23 @@ def train(y, X, train=0.5, test=0.25):
     # iqr = np.percentile(zy,75) - np.percentile(zy, 25)
     # zy = np.median(zy) + 2*iqr*np.tanh((zy-np.median(zy))/(2*iqr))
     #plt.scatter(T,zy, c='black', alpha=0.5, s=0.1)
-    T = [t for t in range(0,maxT)]
-    xs = np.array([px(range(0,maxT)) for px in pxs]).T
-    #xs = [[px(t) for px in pxs] for t in range(0,maxT)]
-    print('Predicting output...')
-    ys = regr.predict(xs)
-      
-    #iqr = np.percentile(ys,75) - np.percentile(ys, 25)
-
-    #ys = np.median(ys) + 2*iqr*np.tanh((ys-np.median(ys))/(2*iqr))
+    if testing:
+        T = [t for t in range(0,maxT)]
+        xs = np.array([px(range(0,maxT)) for px in pxs]).T
+        #xs = [[px(t) for px in pxs] for t in range(0,maxT)]
+        print('Predicting output...')
+        ys = regr.predict(xs)
+          
+        #iqr = np.percentile(ys,75) - np.percentile(ys, 25)
     
-    #ys = [p(x) for x in xs]
-    plt.scatter(T, ys, color='blue', alpha=0.3, s=0.1)
-    
-    
-    plt.axvline(x=trainLength)
-    plt.axvline(x=testLength)
-    plt.show()
+        #ys = np.median(ys) + 2*iqr*np.tanh((ys-np.median(ys))/(2*iqr))
+        
+        #ys = [p(x) for x in xs]
+        if plot:
+            plt.scatter(T, ys, color='blue', alpha=0.3, s=0.1)
+            plt.axvline(x=trainLength)
+            plt.axvline(x=testLength)
+            plt.show()
     # pY = np.poly1d(np.polyfit(ys[:1000],zy[:1000],3))
     # zY = [pY(y) for y in ys]
     # plt.plot([t for t in range(0,maxT, 100)], zY, linewidth=1, color='yellow')
@@ -483,6 +536,9 @@ def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
         dT = T[-1] - T[-2]
         if fast:
             dT = dT * 100
+        #     step = int(len(T)/100)+1
+        # else:
+        #     step = 1
         counts = int(len(T) * (predLength))
         T = T + [T[-1] + (count+1)*dT for count in range(counts)]
         #print(T)
@@ -496,6 +552,9 @@ def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
         dT = T[-1] - T[-2]
         if fast:
             dT = dT * 100
+        #     step = int(len(T)/100) + 1
+        # else:
+        #     step = 1
         counts = int(len(T) * (predLength))
         T = T + [T[-1] + (count+1)*dT for count in range(counts)]
         ypred2 = p(T)
@@ -505,7 +564,7 @@ def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
         ymax = np.max(c, axis=0)
         ymin = np.min(c, axis=0)
         ypred = np.clip(np.mean(c, axis=0), 0, np.inf)
-        
+
         noise = np.std(np.array([v[1] for v in y]) - ypred[:len(y)])
         bandwidth = noise*6
         #print("bandwidth", bandwidth)
@@ -637,18 +696,139 @@ def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
     print('yopt', yopt)
     
     result = {'last':{'t': tlast, 'X':xlast, 'y':ylast},
-              'base':{'t':tpred, 'X':xbase, 'y':ybase},
-              'opt':{'t':tpred, 'X':xopt, 'y':yopt}}
+              'base':{'t':tpred, 'X':list(xbase), 'y':ybase},
+              'opt':{'t':tpred, 'X': list(xopt), 'y':yopt}}
     
     return result
     ...
+
+def findRelationships(X):
+    #find all possible variable-interdependencies in timeSeries data X.
+    #output should be a [fids X fids] matrix of feature importances along with relationship models.
+    t1 = time.time()
+    models = []
+    fis = []
     
+    global findRel
+    
+    def findRel(x):
+        i = X.index(x)
+        print('Analyzing feature', i, '/', len(X)-1)
+        model, fi = train(x, X[:i] + X[i+1:], fast=True)
+        fi = list(fi)
+        fi.insert(i, -1)
+        return model, fi
+    
+    with Pool(7) as p:
+        result = p.map(findRel, X)
+    # for i, x in enumerate(X):
+    #     print('Analyzing feature', i, '/', len(X)-1)
+    #     model, fi = train(x, X[:i] + X[i+1:], fast=True)
+    #     list(fi).insert(i, 0)
+    #     fis.append(fi)
+    #     models.append(model)
+    t2 = time.time() - t1
+    print('time taken',t2/60)
+    
+    print('Saving model...')
+    with open(path / 'models'/ 'relationship.model', 'wb') as f:
+        pickle.dump(result, f)
+
+    return result
+
+def loadModel():
+    print('Loading model...')
+    with open(path / 'models'/ 'relationship.model', 'rb') as f:
+        model = pickle.load(f)
+
+    return model
+
+def featureImportances(models, fids):
+    d = {'datetime': time.time(), 'featureImportances': []}
+    for i, fid in enumerate(fids):
+        d['featureImportances'].append({'fid':fid, 'featureImportance': list(zip(fids, models[i][1]))})
+        
+    return d
+
+def multiForecast(X, models, fids, predLength=0.3):
+    
+    global forecastParallel
+    
+    def forecastParallel(y):
+        
+        i = X.index(y)
+        print('Forecasting feature', i, '/', len(X)-1)
+        ydict = forecast(y, X[:i] + X[i+1:], models[i][0], predLength=predLength, fast=True, plot=False)
+        return ydict
+    
+    with Pool(7) as p:
+        ydicts = p.map(forecastParallel, X)
+        
+    result = {'datetime':time.time(), 'forecast': []}
+    
+    for i, ydict in enumerate(ydicts):
+        fid = fids[i]
+        result['forecast'].append({'fid': fid, **ydict})
+    
+    return result
+    #ydict = forecast(y, X=None, model=None, predLength=predLength, fast=True, plot=False)
+
+def controlStrategiesRandom(X, models, fids, predLength=0.3):
+    
+    y = random.choice(X)
+    targetIndex = X.index(y)
+    maximization = round(random.random())
+    mode = 'max' if maximization else 'min'
+    
+    model = models[targetIndex][0]
+    
+    controlVars = random.sample(fids[:targetIndex]+fids[targetIndex+1:], k=random.choice(range(1,4)))
+    print('controlVars', controlVars)
+    
+    controlVarsIndices = []
+    newfids = fids[:targetIndex]+fids[targetIndex+1:]
+    for cv in controlVars:
+        controlVarsIndices.append(newfids.index(cv))
+    
+    
+    cs = controlStrategy(y,X[:targetIndex] + X[targetIndex+1:], model, control=controlVarsIndices, maximize=maximization, predLength=predLength)
+    
+    cs['last']['X'].insert(targetIndex, cs['last']['y'])
+    cs['base']['X'].insert(targetIndex, cs['base']['y'])
+    cs['opt']['X'].insert(targetIndex, cs['opt']['y'])
+    
+    
+    result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, 'fidsList': fids, **cs}
+    return result
+    
+def generateJson(n=100, outputFilename=None):
+    X = readData()[:n]
+    d = ts2d(X)
+    ts, fids = d2ts(d)
+    result = findRelationships(ts)
+    models = loadModel()
+    fis = featureImportances(models, fids)
+    forecasts = multiForecast(X, models, fids)
+    controlStrategies = controlStrategiesRandom(X, models, fids)
+    
+    jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategies}
+    if not outputFilename:
+        outputFilename = 'output.json'
+    with open(path / 'data' / 'fake-data' / outputFilename, 'w') as f:
+        f.write(json.dumps(jsdict))
+    print('JSON done.')
+    
+    
+
 if __name__ == '__main__':
-    y, X = generateTrainingData()
-    model, fi = train(y,X)
+    #y, X = generateTrainingData()
+    # model, fi = train(y,X)
     
-    #ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
-    ydict = forecast(y,X, model, plot=True, predLength=1)
+    # #ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
+    # ydict = forecast(y,X, model, plot=True, predLength=1)
     
-    strategy = controlStrategy(y, X, model=model, control=[0], maximize=True, predLength=1)
+    # strategy = controlStrategy(y, X, model=model, control=[0], maximize=True, predLength=1)
     
+    ######################
+    #X = generateMultiData(length=30000) 
+    generateJson(n=5, outputFilename='testOutput1.json')

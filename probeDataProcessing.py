@@ -534,7 +534,7 @@ if __name__ == '__main__':
     # T = [ry[0] for ry in ry]
     # Y = [ry[1] for ry in ry]
 
-    py, pxs = train(timeSeries,inFids, outFid)
+    #py, pxs = train(timeSeries,inFids, outFid)
 
     
     

@@ -821,7 +821,7 @@ def generateJson(n=100, outputFilename=None):
     
 
 if __name__ == '__main__':
-    #y, X = generateTrainingData()
+    # y, X = generateTrainingData()
     # model, fi = train(y,X)
     
     # #ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)

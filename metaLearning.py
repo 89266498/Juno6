@@ -3,7 +3,7 @@ from pathlib import Path
 import random
 import numpy as np
 import json
-import os
+import os, sys
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,6 +17,15 @@ import pickle
 
 warnings.filterwarnings('ignore') 
 path = Path('./')
+
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
 
 #randomness goes from 0 to infinity
 def generateTrainingData(nx=3, length=None):
@@ -249,6 +258,16 @@ def randomForestFit(t,x):
     return p
 
 def regress(t,x):
+    
+    n = len(x)
+    
+    k = min(100,n)
+    indices = random.sample(range(n), k)
+    
+    t = [v for ind, v in enumerate(t) if ind in indices]
+    x = [v for ind, v in enumerate(x) if ind in indices]
+    
+    
     p = randomForestFit(t,x)
     #p = polyfit(t,x)
     # xpred = [p(t) for t in range(0,max(t))]
@@ -268,7 +287,7 @@ def regress(t,x):
     
 def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
     if fast:
-        stepRatio = 1000
+        stepRatio = 5
     else:
         stepRatio = 1
     print("Pulling inputs and output data from time series...")
@@ -366,6 +385,9 @@ def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
 
     zxs = np.array([px(list(range(0,maxT))) for px in pxs]).T
     zy = py(range(0,maxT))
+    
+    zxs = [v for i, v in enumerate(zxs) if i % stepRatio == 0]
+    zy = [v for i, v in enumerate(zy) if i % stepRatio == 0]
     # zy = py(range(0, maxT))
     # iqr = np.percentile(zy,75) - np.percentile(zy, 25)
     # zy = np.median(zy) + 2*iqr*np.tanh((zy-np.median(zy))/(2*iqr))
@@ -442,8 +464,18 @@ def fitPattern(xseries, plot=False):
     
     T = [dt[0] for dt in xseries]
     X = [dt[1] for dt in xseries]
+    
+    n = len(xseries)
+    
+    k = min(100,n)
+    indices = random.sample(range(n), k)
+    
+    T = [v for ind, v in enumerate(T) if ind in indices]
+    X = [v for ind, v in enumerate(X) if ind in indices]
+    
+    
     train = max(int(0.5*len(T)), 1)
-    periods, psd = fftApprox(X, thresh=5) 
+    periods, psd = fftApprox(X, thresh=3) 
     periods *= (max(T) - min(T))/(len(T)-1)
     l = max(T) - min(T)
     if len(periods) > 30:
@@ -452,19 +484,19 @@ def fitPattern(xseries, plot=False):
         step = 5
     else:
         step = 1
-    periods = list(set(list(periods)[1:: step])) + [l*2, l*3, l*4]
+    periods = list(set(list(periods)[1:: 10])) + [l*2, l*3, l*4]
     #periods = periods
     print('periods',periods)
     def func(t, b, c, A, B, C):
-        return b*t + c + A*np.sin((2*np.pi/B)*t + C)# + D*np.tanh(E*t+F)
-     
+        return b*t + c + A*np.sin((2*np.pi/B)*t) + C*np.cos((2*np.pi/B)*t)#C)# + D*np.tanh(E*t+F)
+    
     errors = []
     
     for period in periods:
         indices = random.sample(range(len(T)), train)
         trT = [t for ind, t in enumerate(T) if ind in indices]
         trX = [x for ind, x in enumerate(X) if ind in indices]
-        popt, pcov = curve_fit(func, trT, trX, p0=[0, np.mean(trX), np.std(trX)*2, period , 1/max(trT)], maxfev=3000000) #max(trT)/(i+1), np.max(trX), 1/max(trT), 1/max(trT)
+        popt, pcov = curve_fit(func, trT, trX, p0=[0, np.mean(trX), np.std(trX)*2, period , np.std(trX)*2], maxfev=300000) #max(trT)/(i+1), np.max(trX), 1/max(trT), 1/max(trT)
         Xpred = func(np.array(T), *popt)
         
         error = np.sqrt(np.mean((np.array(Xpred)-np.array(X))**2))/np.mean(X) #+ 0.2*i + 0.1*popt[2]/np.mean(X) + 0*popt[3]/max(T)
@@ -479,13 +511,13 @@ def fitPattern(xseries, plot=False):
     #period = periods[np.argmax(psd)]
     
     ind = np.argmin(errors)
-    popt, pcov = curve_fit(func, T, X, p0=[0, np.mean(X), np.std(X)*2, periods[ind], 1/max(T),], maxfev=3000000) # np.max(X), 1/max(T), 1/max(T)
+    popt, pcov = curve_fit(func, T, X, p0=[0, np.mean(X), np.std(X)*2, periods[ind], np.std(trX)*2], maxfev=3000000) # np.max(X), 1/max(T), 1/max(T)
         
     f = lambda t: func(t, *popt)
     p = lambda t: list(map(f,t))
     return p
     
-def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
+def forecast(y, X=None, model=None, predLength=0.3, plot=False):
     
     print("Forecasting time-series...")
     pxs = []
@@ -498,12 +530,17 @@ def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
         maxT = np.max(T)
         
         dT = T[-1] - T[-2]
-        if fast:
-            dT = dT * 100
+        # if fast:
+        #     dT = dT * 100
         counts = int(len(T) * (predLength))
-        T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+        
+        k1 = min(50, len(T))
+        indices1 = random.sample(range(len(T)), k1)
+        
+        T = [v for i, v in enumerate(T) if i in indices1] + [T[-1] + (count+1)*dT for i, count in enumerate(range(counts)) if i % 10 == 0]
+        #T = [T[-1], [T[-1] + (count+1)*dT for count in range(counts)][-1]]
         ypred = np.clip(p(T), 0, np.inf)
-        noise = np.std(np.array([v[1] for v in y]) - ypred[:len(y)])
+        noise = np.std(np.array([v[1] for i, v in enumerate(y) if i in indices1]) - ypred[:k1])
         bandwidth = noise*3
         #print("bandwidth", bandwidth)
         Upp = np.clip(ypred + bandwidth, 0, np.inf)
@@ -533,14 +570,21 @@ def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
         T = [v[0] for v in y]
         #print(T)
         maxT = np.max(T)
-        dT = T[-1] - T[-2]
-        if fast:
-            dT = dT * 100
+        dT = int((T[-1] - T[0])/(len(T)-1))
+        # if fast:
+        #     dT = dT * 100
         #     step = int(len(T)/100)+1
         # else:
         #     step = 1
         counts = int(len(T) * (predLength))
-        T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+    
+        k1 = min(50, len(T))
+        indices1 = random.sample(range(len(T)), k1)
+        
+        T = [v for i, v in enumerate(T) if i in indices1] + [T[-1] + (count+1)*dT for i, count in enumerate(range(counts)) if i % 10 == 0]
+        
+        #T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+        #T = [T[-1], [T[-1] + (count+1)*dT for count in range(counts)][-1]]
         #print(T)
         PX = np.array([p(T) for p in pxs]).T
         ypred1 = model.predict(PX)
@@ -549,14 +593,20 @@ def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
         p = fitPattern(y) # <int(T*train)
         maxT = np.max(T)
         
-        dT = T[-1] - T[-2]
-        if fast:
-            dT = dT * 100
+        dT = int((T[-1] - T[0])/(len(T)-1))
+        # if fast:
+        #     dT = dT * 100
         #     step = int(len(T)/100) + 1
         # else:
         #     step = 1
         counts = int(len(T) * (predLength))
-        T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+        
+        # k1 = min(100, len(T))
+        # indices1 = random.sample(range(len(T)), k1)
+        
+        T = [v for i, v in enumerate(T) if i in indices1] + [T[-1] + (count+1)*dT for i, count in enumerate(range(counts)) if i % 10 == 0]
+        #T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+        #T = [T[-1], [T[-1] + (count+1)*dT for count in range(counts)][-1]]
         ypred2 = p(T)
         
         #ypred = (ypred1 + ypred2)/2
@@ -565,7 +615,7 @@ def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
         ymin = np.min(c, axis=0)
         ypred = np.clip(np.mean(c, axis=0), 0, np.inf)
 
-        noise = np.std(np.array([v[1] for v in y]) - ypred[:len(y)])
+        noise = np.std(np.array([v[1] for i, v in enumerate(y) if i in indices1]) - ypred[:k1])
         bandwidth = noise*6
         #print("bandwidth", bandwidth)
         Upp = np.clip(np.mean(np.array([ypred + bandwidth, ymax]), axis=0), 0, np.inf)
@@ -575,18 +625,38 @@ def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
         
         if plot:
             plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
-            plt.scatter(T, ypred, s=0.5, alpha=1, color='blue')
-            plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
-            plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
+            # plt.scatter(T, ypred, s=0.5, alpha=1, color='blue')
+            # plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
+            # plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
+            plt.plot(T, ypred, linewidth=1, color='blue')
+            plt.plot(T, Upp, linewidth=1, color='orange')
+            plt.plot(T, Lwr, linewidth=1, color='red')
             plt.axvline(x=maxT)
             plt.show()
     
     yout = list(zip(T, ypred))
     yupp = list(zip(T, Upp))
     ylwr = list(zip(T, Lwr))
+    print(ylwr[-1][1])
+    print(y[-1][1])
+    print(yupp[-1][1])
+    print(indices1[-1])
     
-    anomalies = [v for i, v in enumerate(y) if not ylwr[i][1] <= v[1] <= yupp[i][1]]
-    anomalyRate = len(anomalies)/len(y)
+    anomalies = []
+    vals = []
+    for i,v in enumerate(y):
+        if i in indices1:
+            vals.append(v[1])
+    
+    for i, v in enumerate(vals):
+        if not (ylwr[i][1] <= v <= yupp[i][1]):
+            anomalies.append(v)
+    
+    
+    
+    
+    # anomalies = [v for i, v in enumerate(y) if not (ylwr[i][1] <= v[1] <= yupp[i][1]) and i in indices1]
+    anomalyRate = len(anomalies)/len([y for i, y in enumerate(y) if i in indices1])
     print('anomalies', anomalies)
     print('anomalyRate', anomalyRate)
     
@@ -594,7 +664,7 @@ def forecast(y, X=None, model=None, predLength=0.3, fast=False, plot=False):
     
     return ydict
 
-def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
+def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3, ydict=None):
     #X is a list of dependent time-series, y is the target time-series.
     #control is a list of control variables (indices for X)
     #mode: min or max
@@ -609,7 +679,8 @@ def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
         control = list(range(len(X)))
     
     print('Figuring out feasible region for output variable...')
-    ydict = forecast(y,X, model, predLength=predLength)
+    if not ydict:
+        ydict = forecast(y,X, model, predLength=predLength)
     tmax = y[-1][0]
     print('tmax', tmax)
     print('Figuring out feasible regions for input variables...')
@@ -652,7 +723,7 @@ def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3):
     
     xopt = xbase
     print('Using Evolutionary Strategy to find optimal control...')
-    for iteration in range(100):
+    for iteration in range(10):
         print('iteration', iteration)
         xin = np.array([np.random.normal(xopt, variance) for i in range(30)] + [xopt])
         #print('xinput',xin)
@@ -736,6 +807,11 @@ def findRelationships(X):
 
     return result
 
+def analysis(models, fis, forecasts):
+    return
+
+
+
 def loadModel():
     print('Loading model...')
     with open(path / 'models'/ 'relationship.model', 'rb') as f:
@@ -758,7 +834,7 @@ def multiForecast(X, models, fids, predLength=0.3):
         
         i = X.index(y)
         print('Forecasting feature', i, '/', len(X)-1)
-        ydict = forecast(y, X[:i] + X[i+1:], models[i][0], predLength=predLength, fast=True, plot=False)
+        ydict = forecast(y, X[:i] + X[i+1:], models[i][0], predLength=predLength, plot=False)
         return ydict
     
     with Pool(7) as p:
@@ -808,7 +884,7 @@ def generateJson(n=100, outputFilename=None):
     result = findRelationships(ts)
     models = loadModel()
     fis = featureImportances(models, fids)
-    forecasts = multiForecast(X, models, fids)
+    forecasts = multiForecast(X, models, fids, predLength=0.1)
     controlStrategies = controlStrategiesRandom(X, models, fids)
     
     jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategies}
@@ -818,17 +894,54 @@ def generateJson(n=100, outputFilename=None):
         f.write(json.dumps(jsdict))
     print('JSON done.')
     
-    
+
+
 
 if __name__ == '__main__':
     # y, X = generateTrainingData()
+    # t0 = time.time()
+    # t1 = time.time()
+    # with HiddenPrints():
+    #     model, fi = train(y,X, fast=True)
+    # t2 = time.time()
+    # print('training time taken', t2-t1)
+    # # t1 = time.time()
+    # # with HiddenPrints():   
+    # #     #ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
+    # # t2 = time.time()
+    # # print('time taken', t2-t1)
+    # t1 = time.time()
+    # with HiddenPrints():
+    #     ydict = forecast(y,X, model, plot=True, predLength=0.1)
+    
+    # t2 = time.time()
+    # print('forecast time taken', t2-t1)
+    # t1 = time.time()
+    # with HiddenPrints():
+    #     strategy = controlStrategy(y, X, model=model, control=[0], maximize=True, predLength=0.1, ydict=ydict)
+        
+    # t2 = time.time()
+    # print('strategy time taken', t2-t1)
+    # print('total time', t2-t0)
+    # t1 = time.time()
+    
     # model, fi = train(y,X)
     
     # #ypred, yhigh, ylow, anomalyRate = forecast(y,X=None, regr=None)
-    # ydict = forecast(y,X, model, plot=True, predLength=1)
+    # ydict = forecast(y,X, model, plot=True, predLength=0.1)
     
-    # strategy = controlStrategy(y, X, model=model, control=[0], maximize=True, predLength=1)
+    # strategy = controlStrategy(y, X, model=model, control=[0], maximize=True, predLength=0.1)
+        
+    # t2 = time.time()
     
+    # print('time taken', t2-t1)
     ######################
     #X = generateMultiData(length=30000) 
-    generateJson(n=5, outputFilename='testOutput1.json')
+    t1 = time.time()
+    X = loadModel()
+    #with HiddenPrints():
+    generateJson(outputFilename='testOutput3.json')
+    t2 = time.time()
+    print('time taken', t2-t1)
+    #######################
+    

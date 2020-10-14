@@ -14,6 +14,7 @@ import warnings
 from scipy.optimize import curve_fit
 from multiprocessing import Pool
 import pickle 
+import requests
 
 warnings.filterwarnings('ignore') 
 path = Path('./')
@@ -652,6 +653,10 @@ def forecast(y, X=None, model=None, predLength=0.3, plot=False):
         if not (ylwr[i][1] <= v <= yupp[i][1]):
             anomalies.append(v)
     
+    lwr = ylwr[k1][1]
+    upp = yupp[k1][1]
+    isAnomaly = not lwr <= y[-1][1] <= upp
+    
     
     
     
@@ -660,7 +665,7 @@ def forecast(y, X=None, model=None, predLength=0.3, plot=False):
     print('anomalies', anomalies)
     print('anomalyRate', anomalyRate)
     
-    ydict = {'pred':yout, 'high': yupp, 'low': ylwr, 'anomalyRate': anomalyRate, 'anomalies': anomalies}
+    ydict = {'pred':yout, 'high': yupp, 'low': ylwr, 'anomalyRate': anomalyRate, 'anomalies': anomalies, 'isAnomaly': isAnomaly, 'highNow': upp, 'lowNow': lwr, 'yNow': y[-1][1]}
     
     return ydict
 
@@ -807,8 +812,41 @@ def findRelationships(X):
 
     return result
 
-def analysis(models, fis, forecasts):
-    return
+def requestJs(n=10):
+    response = requests.get('http://192.168.101.15:18888/adapter/datastream?key=' + str(n))
+    js = response.json()
+    time = js['tick']
+    mapping = js['mapping']
+    data = js['data']
+    
+    response = requests.get('http://192.168.101.15:18888/adapter/oplog')
+    controlDecision = response.json()
+    return time, mapping, controlDecision, data
+    
+
+
+
+def analysis(fis, forecasts, fids, controlStrategies=None):
+    
+    anomalyIndices = []
+    forecasts = forecasts['forecast']
+    for ind, forecast in enumerate(forecasts):
+        print('forecast',forecast)
+        if random.random() > 0.5: #forecast['isAnomaly']
+            anomalyIndices.append(ind)
+    
+    anomalyFids = [fids[ind] for ind in anomalyIndices]
+    
+    summary = []
+    if anomalyFids:
+        for ind, anomalyFid in enumerate(anomalyFids):
+            sentence = '指标' + str(anomalyFid) + '出现异常：当前值' + str(round(forecasts[ind]['yNow'],2)) + '不在正常范围' + str(round(forecasts[ind]['lowNow'],2)) + '~' + str(round(forecasts[ind]['highNow'],2)) 
+            summary.append(sentence)
+        
+    if not summary:
+        summary.append('无异常')
+    
+    return summary
 
 
 
@@ -877,7 +915,7 @@ def controlStrategiesRandom(X, models, fids, predLength=0.3):
     result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, 'fidsList': fids, **cs}
     return result
     
-def generateJson(n=100, outputFilename=None):
+def generateJson(n=10, outputFilename=None):
     X = readData()[:n]
     d = ts2d(X)
     ts, fids = d2ts(d)
@@ -886,8 +924,9 @@ def generateJson(n=100, outputFilename=None):
     fis = featureImportances(models, fids)
     forecasts = multiForecast(X, models, fids, predLength=0.1)
     controlStrategies = controlStrategiesRandom(X, models, fids)
-    
-    jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategies}
+    sentences = analysis(fis, forecasts, fids)
+    print('summary',sentences)
+    jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategies, 'summary': sentences}
     if not outputFilename:
         outputFilename = 'output.json'
     with open(path / 'data' / 'fake-data' / outputFilename, 'w') as f:
@@ -912,18 +951,21 @@ if __name__ == '__main__':
     # # print('time taken', t2-t1)
     # t1 = time.time()
     # with HiddenPrints():
-    #     ydict = forecast(y,X, model, plot=True, predLength=0.1)
+    #     ydict = forecast(y,X, model, plot=True, predLength=0.2)
     
     # t2 = time.time()
     # print('forecast time taken', t2-t1)
     # t1 = time.time()
     # with HiddenPrints():
-    #     strategy = controlStrategy(y, X, model=model, control=[0], maximize=True, predLength=0.1, ydict=ydict)
+    #     strategy = controlStrategy(y, X, model=model, control=[0], maximize=True, predLength=0.2, ydict=ydict)
         
     # t2 = time.time()
     # print('strategy time taken', t2-t1)
     # print('total time', t2-t0)
-    # t1 = time.time()
+    
+    # sentences = analysis(fi, [ydict], fids=['mds7392'])
+    # print(sentences)
+    # # t1 = time.time()
     
     # model, fi = train(y,X)
     
@@ -943,5 +985,5 @@ if __name__ == '__main__':
     generateJson(outputFilename='testOutput3.json')
     t2 = time.time()
     print('time taken', t2-t1)
-    #######################
+    # #######################
     

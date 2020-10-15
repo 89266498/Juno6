@@ -242,10 +242,10 @@ def polyfit(t, x):
 
 def randomForestRegress(x):
     #x is a time series: x = [(t,x_t)]
-
+    #print(x[-5:])
     xs = [x[1] for x in x]
     ts = [[x[0]] for x in x]
-    regr = RandomForestRegressor(n_estimators=50).fit(ts, xs)
+    regr = RandomForestRegressor(n_estimators=10, max_features=0.1).fit(ts, xs)
     def p(t):
         t = np.array(t).reshape(-1,1)
         result = regr.predict(t)
@@ -287,6 +287,7 @@ def regress(t,x):
     
     
 def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
+    
     if fast:
         stepRatio = 5
     else:
@@ -302,21 +303,25 @@ def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
     T += [d[0] for d in y]
     #T = sorted(list(set(T))) #common timestamp in X
     #print(max(T))
-    maxT = max(T)
+    
+    
+    maxT = int(max(T))
+    minT = int(min(T))
     #train-test config
     zxs = []
+    #print('maxT', maxT)
+    trainLength = int((maxT-minT)*train + minT)
+    #testLength = int(trainLength*((train+test)/train))
     
-    trainLength = int(maxT*train)
-    testLength = int(trainLength*((train+test)/train))
-    
+    #print('tL',trainLength)
     trainT = [y[0] for i, y in enumerate(y) if y[0] <= trainLength and i % stepRatio == 0]
     trainY = [y[1] for i, y in enumerate(y) if y[0] <= trainLength and i % stepRatio == 0]
-
-    n = len(trainY)
+    
+    # n = len(trainY)
     
     
-    resY = []
-    resX = []
+    # resY = []
+    # resX = []
     print('Regressing output y...')
     py = regress(trainT,trainY)
     #plt.scatter(trainT,trainY, s=0.1, c='green', alpha=0.5)
@@ -327,26 +332,27 @@ def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
     print('Regressing input Xs...')
     
     pxs = []
-    for x in X:
+    for i, x in enumerate(X):
+        print(i) if i % 10 == 0 else None
         px = regress([x[0] for i, x in enumerate(x) if x[0] <= trainLength and i % stepRatio == 0],[x[1] for i, x in enumerate(x) if x[0] <= trainLength and i % stepRatio == 0])
         pxs.append(px)
         if plot:
             plt.scatter([x[0] for x in x],[x[1] for x in x], color='blue', s=0.5)
             #plt.plot([x[0] for x in x], [px(x[0])  for x in x], linewidth=2, color='blue')
             plt.axvline(x=trainLength)
-            plt.axvline(x=testLength)
+            #plt.axvline(x=testLength)
             plt.show()
     
     
     #print('maxT',maxT)
     
-    zxs = np.array([px(list(range(0,maxT))) for px in pxs]).T
+    zxs = np.array([px(list(range(minT,maxT, int((maxT-minT)/100)))) for px in pxs]).T
     
     # for t in range(0,maxT):
     #     zx = [px(t) for px in pxs]
     #     zxs.append(zx)
     
-    zy = py(range(0,maxT))
+    zy = py(range(minT,maxT, int((maxT-minT)/100)))
     if plot:
         plt.scatter([y[0] for y in y],[y[1] for y in y], s=0.5,alpha=0.7, color='green')
     #plt.plot([t for t in range(0,maxT, step)], zy, linewidth=2, color='black')
@@ -373,7 +379,8 @@ def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
     
     pxs = []
     
-    for x in X:
+    for j, x in enumerate(X):
+        print(j) if j % 10 == 0 else None
         #Overfitting
         px = regress([x[0] for i, x in enumerate(x) if i % stepRatio == 0],[x[1] for i, x in enumerate(x) if i % stepRatio == 0])
         pxs.append(px)
@@ -384,8 +391,8 @@ def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
     #print('maxT',maxT)
 
 
-    zxs = np.array([px(list(range(0,maxT))) for px in pxs]).T
-    zy = py(range(0,maxT))
+    zxs = np.array([px(list(range(minT,maxT,int((maxT-minT)/100)))) for px in pxs]).T
+    zy = py(range(minT,maxT,int((maxT-minT)/100)))
     
     zxs = [v for i, v in enumerate(zxs) if i % stepRatio == 0]
     zy = [v for i, v in enumerate(zy) if i % stepRatio == 0]
@@ -394,8 +401,8 @@ def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
     # zy = np.median(zy) + 2*iqr*np.tanh((zy-np.median(zy))/(2*iqr))
     #plt.scatter(T,zy, c='black', alpha=0.5, s=0.1)
     if testing:
-        T = [t for t in range(0,maxT)]
-        xs = np.array([px(range(0,maxT)) for px in pxs]).T
+        T = [t for t in range(minT,maxT, int((maxT-minT)/100))]
+        xs = np.array([px(range(minT,maxT, int((maxT-minT)/100))) for px in pxs]).T
         #xs = [[px(t) for px in pxs] for t in range(0,maxT)]
         print('Predicting output...')
         ys = regr.predict(xs)
@@ -408,7 +415,7 @@ def train(y, X, train=0.5, test=0.25, fast=False, testing=True, plot=False):
         if plot:
             plt.scatter(T, ys, color='blue', alpha=0.3, s=0.1)
             plt.axvline(x=trainLength)
-            plt.axvline(x=testLength)
+            #plt.axvline(x=testLength)
             plt.show()
     # pY = np.poly1d(np.polyfit(ys[:1000],zy[:1000],3))
     # zY = [pY(y) for y in ys]
@@ -790,7 +797,7 @@ def findRelationships(X):
     def findRel(x):
         i = X.index(x)
         print('Analyzing feature', i, '/', len(X)-1)
-        model, fi = train(x, X[:i] + X[i+1:], fast=True)
+        model, fi = train(x, X[:i] + X[i+1:], fast=True, testing=False)
         fi = list(fi)
         fi.insert(i, -1)
         return model, fi
@@ -813,6 +820,7 @@ def findRelationships(X):
     return result
 
 def requestJs(n=10):
+    print('Sending requests...')
     response = requests.get('http://192.168.101.15:18888/adapter/datastream?key=' + str(n))
     js = response.json()
     time = js['tick']
@@ -821,9 +829,41 @@ def requestJs(n=10):
     
     response = requests.get('http://192.168.101.15:18888/adapter/oplog')
     controlDecision = response.json()
+    
+    d = {'time': time, 'mapping': mapping, 'data': data, 'controlDecision': controlDecision}
+    
+    print('Saving response data...')
+    with open(path / 'data' / 'fake-data' / 'requested.json', 'w') as f:
+        f.write(json.dumps(d))
+    
     return time, mapping, controlDecision, data
     
-
+def loadData():
+    with open(path / 'data' / 'fake-data' / 'requested.json', 'r') as f:
+        d = json.loads(f.read())
+    
+    mapping = d['mapping']
+    controlDecision = d['controlDecision']
+    data = d['data']
+    
+    fids = [row['id'] for row in data]
+    X = [row['series'] for row in data]
+    ts = []
+    Fids = []
+    for i, x in enumerate(X):
+        if x:
+            series = []
+            for row in x:
+                if row != [None,None]:
+                    series.append(row)
+                else:
+                    print('NONE NONE')
+            #print(series[-5:])
+            ts.append(series)
+            Fids.append(fids[i])
+    
+    
+    return ts, Fids, mapping, controlDecision
 
 
 def analysis(fis, forecasts, fids, controlStrategies=None):
@@ -840,7 +880,7 @@ def analysis(fis, forecasts, fids, controlStrategies=None):
     summary = []
     if anomalyFids:
         for ind, anomalyFid in enumerate(anomalyFids):
-            sentence = '指标' + str(anomalyFid) + '出现异常：当前值' + str(round(forecasts[ind]['yNow'],2)) + '不在正常范围' + str(round(forecasts[ind]['lowNow'],2)) + '~' + str(round(forecasts[ind]['highNow'],2)) 
+            sentence = '指标' + str(anomalyFid) + '出现异常：当前值' + str(round(forecasts[ind]['yNow'],2)) + '不在正常范围内' + ' (' + str(round(forecasts[ind]['lowNow'],2)) + '~' + str(round(forecasts[ind]['highNow'],2))  + ') '
             summary.append(sentence)
         
     if not summary:
@@ -915,10 +955,13 @@ def controlStrategiesRandom(X, models, fids, predLength=0.3):
     result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, 'fidsList': fids, **cs}
     return result
     
-def generateJson(n=10, outputFilename=None):
-    X = readData()[:n]
-    d = ts2d(X)
-    ts, fids = d2ts(d)
+def generateJson(rows=100, columns=5, outputFilename=None):
+    requestJs(n=rows)
+    #X = loadData()
+    ts, fids, mapping, controlDecision = loadData()
+    #X = readData()[:columns]
+    # d = ts2d(X)
+    # ts, fids = d2ts(d)
     result = findRelationships(ts)
     models = loadModel()
     fis = featureImportances(models, fids)
@@ -933,6 +976,17 @@ def generateJson(n=10, outputFilename=None):
         f.write(json.dumps(jsdict))
     print('JSON done.')
     
+def knnRegress(X):
+    
+    minT = int(min([x[0][0] for x in X]))
+    maxT = int(max([x[0][0] for x in X]))
+    
+    # for x in X:
+        
+
+
+
+
 
 
 
@@ -978,12 +1032,26 @@ if __name__ == '__main__':
     
     # print('time taken', t2-t1)
     ######################
-    #X = generateMultiData(length=30000) 
+    # #X = generateMultiData(length=30000) 
+    # t1 = time.time()
+    # X = loadModel()
+    # #with HiddenPrints():
+    # generateJson(outputFilename='testOutput3.json')
+    # t2 = time.time()
+    # print('time taken', t2-t1)
+    # # #######################
     t1 = time.time()
-    X = loadModel()
-    #with HiddenPrints():
-    generateJson(outputFilename='testOutput3.json')
+    rows = 10
+    requestJs(n=rows)
+    #X = loadData()
+    ts, fids, mapping, controlDecision = loadData()
+    #result = findRelationships(ts)
+    X = ts[:]
+    x = random.choice(X)
+    i = X.index(x)
+    print('Analyzing feature', i, '/', len(X)-1)
+    model, fi = train(x, X[:i] + X[i+1:], fast=True, testing=False)
+    fi = list(fi)
+    fi.insert(i, -1)
     t2 = time.time()
-    print('time taken', t2-t1)
-    # #######################
-    
+    print(t2-t1)

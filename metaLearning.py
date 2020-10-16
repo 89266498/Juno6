@@ -1007,20 +1007,26 @@ def knnRegress(X, n_points=30):
     return Ts, trX
 
 def featureImportances2(Ts, trX):
+    
+
     fis = []
     M = trX.T
-
     for i, trx in enumerate(M):
+        print(i, '/', len(M))
+        trainX = [[v for v in r] for r in trX.T]
+        trainX = trainX[:i] + trainX[i+1:]
+        trainX = np.array(trainX).T
         
-        trainX = trX
-        vec = trainX[:,i]
-        #trainX[:,i] = -404
-        print(np.std(trainX))
+        #print(np.std(trainX))
         regr = RandomForestRegressor(n_estimators=10).fit(trainX, trX[:,i])
         #trainX[:,i] = vec
         fi = list(regr.feature_importances_)
         fi.insert(i,-1)
-        fis.append(fi)
+    fis.append(fi)
+
+    
+    print('completed')
+        #fis.append(fi)
     #fis = np.array(fis)
     return fis
 

@@ -821,7 +821,7 @@ def findRelationships(X):
 
 def requestJs(n=10):
     print('Sending requests...')
-    response = requests.get('http://192.168.101.15:18888/adapter/datastream?key=' + str(n))
+    response = requests.get('http://192.168.101.15:18888/adapter/datastream?start=1451904960&end=1451975040')
     js = response.json()
     time = js['tick']
     mapping = js['mapping']
@@ -855,7 +855,8 @@ def loadData():
             series = []
             for row in x:
                 if row != [None,None]:
-                    series.append(row)
+                    if row[1] >= 0:
+                        series.append(row)
                 else:
                     print('NONE NONE')
             #print(series[-5:])
@@ -976,17 +977,52 @@ def generateJson(rows=100, columns=5, outputFilename=None):
         f.write(json.dumps(jsdict))
     print('JSON done.')
     
-def knnRegress(X):
+def knnRegress(X, n_points=30):
     
-    minT = int(min([x[0][0] for x in X]))
-    maxT = int(max([x[0][0] for x in X]))
+    T = []
+    for x in X:
+        T += [r[0] for r in x]
+      
+    T = list(set(T))
+    minT = int(min(T))
+    maxT = int(max(T))
     
-    # for x in X:
+    Ts = range(minT, maxT+1*int((maxT-minT)/n_points), int((maxT-minT)/n_points))
+    
+    trX = []
+    for t in Ts:
+        trx = []
+        for x in X:
+            ts = (1/(np.abs((np.array([r[0] for r in x]) -  t)) + 0.1))**2
+            ps = ts/np.sum(ts)
+            #print('sum', round(np.sum(ps),2))
+            xs = np.array([r[1] for r in x])
+            rx = np.dot(xs,ps)
+            trx.append(rx)
+        trX.append(trx)
+    
+    trX = np.array(trX)
+    Ts = np.array(Ts)
+    
+    return Ts, trX
+
+def featureImportances2(Ts, trX):
+    fis = []
+    M = trX.T
+
+    for i, trx in enumerate(M):
         
-
-
-
-
+        trainX = trX
+        vec = trainX[:,i]
+        #trainX[:,i] = -404
+        print(np.std(trainX))
+        regr = RandomForestRegressor(n_estimators=10).fit(trainX, trX[:,i])
+        #trainX[:,i] = vec
+        fi = list(regr.feature_importances_)
+        fi.insert(i,-1)
+        fis.append(fi)
+    #fis = np.array(fis)
+    return fis
 
 
 
@@ -1041,17 +1077,39 @@ if __name__ == '__main__':
     # print('time taken', t2-t1)
     # # #######################
     t1 = time.time()
-    rows = 10
-    requestJs(n=rows)
+    #rows = 10
+    #requestJs(n=rows)
     #X = loadData()
     ts, fids, mapping, controlDecision = loadData()
-    #result = findRelationships(ts)
-    X = ts[:]
-    x = random.choice(X)
-    i = X.index(x)
-    print('Analyzing feature', i, '/', len(X)-1)
-    model, fi = train(x, X[:i] + X[i+1:], fast=True, testing=False)
-    fi = list(fi)
-    fi.insert(i, -1)
+    # #result = findRelationships(ts)
+    # X = ts[:]
+    # x = random.choice(X)
+    # i = X.index(x)
+    # print('Analyzing feature', i, '/', len(X)-1)
+    # model, fi = train(x, X[:i] + X[i+1:], fast=True, testing=False)
+    # fi = list(fi)
+    # fi.insert(i, -1)
+    # ydict = forecast(x,X[:i] + X[i+1:], model, plot=True, predLength=0.2)
+    
+    # strategy = controlStrategy(x, X[:i] + X[i+1:], model=model, control=random.sample(fids, 3), maximize=True, predLength=0.1)
+    
+    # t2 = time.time()
+    # print(t2-t1)
+    
+    ######################################
+    t1 = time.time()
+    X, fids, mapping, controlDecision = loadData()
+    Ts, trX = knnRegress(X, n_points=30)
+    ind = 1128
+    plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=50)
+    plt.scatter(Ts, trX[:,ind], s=10, c='green')
+    plt.plot(Ts, trX[:,ind], linewidth=1, c='blue')
+    plt.show()
+    
+    fis = featureImportances2(Ts, trX)
     t2 = time.time()
-    print(t2-t1)
+    print('time taken', t2-t1)
+    
+    
+    
+    

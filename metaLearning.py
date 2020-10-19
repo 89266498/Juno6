@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
+#from sklearn.linear_model import LinearRegression
 import warnings
 from scipy.optimize import curve_fit
 from multiprocessing import Pool
@@ -819,15 +820,15 @@ def findRelationships(X):
 
     return result
 
-def requestJs(n=10):
+def requestJs():
     print('Sending requests...')
-    response = requests.get('http://192.168.101.15:18888/adapter/datastream?start=1451904960&end=1451975040')
+    response = requests.get('http://192.168.101.21:18888/adapter/datastream?start=1451904960&end=1451975040')
     js = response.json()
     time = js['tick']
     mapping = js['mapping']
     data = js['data']
     
-    response = requests.get('http://192.168.101.15:18888/adapter/oplog')
+    response = requests.get('http://192.168.101.21:18888/adapter/oplog')
     controlDecision = response.json()
     
     d = {'time': time, 'mapping': mapping, 'data': data, 'controlDecision': controlDecision}
@@ -978,7 +979,7 @@ def generateJson(rows=100, columns=5, outputFilename=None):
     print('JSON done.')
     
 def knnRegress(X, n_points=30):
-    
+    #for downsampling, denoising and synchronizing signals
     T = []
     for x in X:
         T += [r[0] for r in x]
@@ -993,10 +994,10 @@ def knnRegress(X, n_points=30):
     for t in Ts:
         trx = []
         for x in X:
-            ts = (1/(np.abs((np.array([r[0] for r in x]) -  t)) + 0.1))**2
+            ts = (1/(np.abs((np.array([r[0] for r in x if r[0]]) -  t)) + 0.1))**1 # <= (minT + (t-minT)*1)
             ps = ts/np.sum(ts)
             #print('sum', round(np.sum(ps),2))
-            xs = np.array([r[1] for r in x])
+            xs = np.array([r[1] for r in x if r[0]]) # <= (minT + (t-minT)*1)
             rx = np.dot(xs,ps)
             trx.append(rx)
         trX.append(trx)
@@ -1006,9 +1007,47 @@ def knnRegress(X, n_points=30):
     
     return Ts, trX
 
+def forecast2(Ts,trX, S=0.7, L=0.5):
+    s = int(len(trX)*S)
+    l = int(len(trX)*L)
+    F = len(trX[0])
+    Y = trX
+    print(len(Ts))
+    for ind in range(F):
+        print('training', ind, '/', F)
+        trainX = np.array([trX[i:s+i, ind] for i in range(len(trX)-s)])
+        print(np.shape(trainX))
+        trainY = np.array([trX[s+i,ind] for i in range(len(trX)-s)])
+        # print(np.shape(trainX))
+        print(np.shape(trainY))
+        regr = RidgeCV().fit(trainX, trainY)
+        print('training done')
+        #resY = []
+        
+        
+        print('forecasting')
+        for j in range(l):
+            print(j)
+            fcX = trX[-s:, ind]
+            #print(np.shape(fcX))
+            #print(np.array([fcX]))
+            fcY = regr.predict(np.array([fcX]))
+            print(fcY)
+            #Y = np.append(Y, fcY[0])
+            trX =  np.append(trX.T[ind], fcY[0])
+            trX = trX.T
+            Ts = np.append(Ts, Ts[-1] + j*(Ts[1]-Ts[0]))
+            #Y
+        
+        
+    return Ts, trX
+    
+    
+    ...
+
 def featureImportances2(Ts, trX):
     
-
+    models = []
     fis = []
     M = trX.T
     for i, trx in enumerate(M):
@@ -1018,17 +1057,18 @@ def featureImportances2(Ts, trX):
         trainX = np.array(trainX).T
         
         #print(np.std(trainX))
-        regr = RandomForestRegressor(n_estimators=10).fit(trainX, trX[:,i])
+        regr = RandomForestRegressor(n_estimators=30, max_features='sqrt').fit(trainX, trX[:,i])
         #trainX[:,i] = vec
         fi = list(regr.feature_importances_)
         fi.insert(i,-1)
-    fis.append(fi)
+        models.append(regr)
+        fis.append(fi)
 
     
     print('completed')
         #fis.append(fi)
     #fis = np.array(fis)
-    return fis
+    return models, fis
 
 
 
@@ -1082,11 +1122,11 @@ if __name__ == '__main__':
     # t2 = time.time()
     # print('time taken', t2-t1)
     # # #######################
-    t1 = time.time()
+    #t1 = time.time()
     #rows = 10
-    #requestJs(n=rows)
+    #requestJs()
     #X = loadData()
-    ts, fids, mapping, controlDecision = loadData()
+    #ts, fids, mapping, controlDecision = loadData()
     # #result = findRelationships(ts)
     # X = ts[:]
     # x = random.choice(X)
@@ -1104,15 +1144,24 @@ if __name__ == '__main__':
     
     ######################################
     t1 = time.time()
-    X, fids, mapping, controlDecision = loadData()
+    #X, fids, mapping, controlDecision = loadData()
+    #I = [i for i,x in enumerate(X) if 2 < len(x) < 300]
+    #ind = random.choice(I)
+    with open(path / 'data' / 'fake-data' / 'randTimeSeries.json', 'r') as f:
+        X = json.loads(f.read())
+    ind = random.choice(range(len(X)))
+    
     Ts, trX = knnRegress(X, n_points=30)
-    ind = 1128
-    plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=50)
-    plt.scatter(Ts, trX[:,ind], s=10, c='green')
+    
+    Ts, resY = forecast2(Ts, trX)
+    
+    plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=20, alpha=0.5, c='green')
+    plt.scatter(Ts, trX[:,ind], s=10, c='black')
     plt.plot(Ts, trX[:,ind], linewidth=1, c='blue')
+    #plt.plot()
     plt.show()
     
-    fis = featureImportances2(Ts, trX)
+    #models, fis = featureImportances2(Ts, trX)
     t2 = time.time()
     print('time taken', t2-t1)
     

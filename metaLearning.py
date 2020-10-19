@@ -1007,7 +1007,7 @@ def knnRegress(X, n_points=30):
     
     return Ts, trX
 
-def forecast2(Ts,trX, S=0.7, L=0.5):
+def forecast2(Ts,trX, S=0.5, L=0.5):
     s = int(len(trX)*S)
     l = int(len(trX)*L)
     F = len(trX[0])
@@ -1022,7 +1022,7 @@ def forecast2(Ts,trX, S=0.7, L=0.5):
         trainY = np.array([trX[s+i,ind] for i in range(len(trX)-s)])
         # print(np.shape(trainX))
         #print(np.shape(trainY))
-        regr = BayesianRidge().fit(trainX, trainY)
+        regr = RidgeCV(normalize=True, alphas=[1e-7,1e-6,1e-5,1e-4,1e-3, 1e-2, 1e-1, 1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16]).fit(trainX, trainY)  #RidgeCV(normalize=True, alphas=[1e-7,1e-6,1e-5,1e-4,1e-3, 1e-2, 1e-1, 1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
         regrs.append(regr)
         #print('training done')
         resY = []
@@ -1165,11 +1165,14 @@ if __name__ == '__main__':
     
     Ts, trX = knnRegress(X, n_points=30)
     
-    Ts, resY = forecast2(Ts, trX)
+    Ts1, resY = forecast2(Ts, trX, L=2)
     
     plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=20, alpha=0.5, c='green')
-    plt.scatter(Ts, resY[:,ind], s=10, c='black')
-    plt.plot(Ts, resY[:,ind], linewidth=1, c='blue')
+    plt.scatter(Ts, trX[:,ind], s=50, c='teal')
+    plt.scatter(Ts1, resY[:,ind], s=10, c='black')
+    plt.plot(Ts1, resY[:,ind], linewidth=1, c='blue')
+    
+    plt.axvline(Ts[-1])
     #plt.plot()
     plt.show()
     

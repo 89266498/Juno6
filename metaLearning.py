@@ -1011,35 +1011,47 @@ def forecast2(Ts,trX, S=0.7, L=0.5):
     s = int(len(trX)*S)
     l = int(len(trX)*L)
     F = len(trX[0])
-    Y = trX
-    print(len(Ts))
+    #Y = trX
+    #print(len(Ts))
+    regrs = []
+    resYs = []
     for ind in range(F):
-        print('training', ind, '/', F)
+        #print('training', ind, '/', F)
         trainX = np.array([trX[i:s+i, ind] for i in range(len(trX)-s)])
-        print(np.shape(trainX))
+        #print(np.shape(trainX))
         trainY = np.array([trX[s+i,ind] for i in range(len(trX)-s)])
         # print(np.shape(trainX))
-        print(np.shape(trainY))
-        regr = RidgeCV().fit(trainX, trainY)
-        print('training done')
-        #resY = []
+        #print(np.shape(trainY))
+        regr = BayesianRidge().fit(trainX, trainY)
+        regrs.append(regr)
+        #print('training done')
+        resY = []
         
-        
-        print('forecasting')
+        fcX = trX[-s:, ind]
+        #print('forecasting')
         for j in range(l):
-            print(j)
-            fcX = trX[-s:, ind]
+            #print(fcX)
             #print(np.shape(fcX))
             #print(np.array([fcX]))
-            fcY = regr.predict(np.array([fcX]))
-            print(fcY)
+            fcY = regr.predict([fcX])
+            #print(fcY)
             #Y = np.append(Y, fcY[0])
-            trX =  np.append(trX.T[ind], fcY[0])
-            trX = trX.T
-            Ts = np.append(Ts, Ts[-1] + j*(Ts[1]-Ts[0]))
-            #Y
-        
-        
+            fcX =  np.append(fcX, fcY[0])
+            fcX = fcX[-s:]
+            #trX = trX.T
+            resY.append(fcY[0])
+        resYs.append(resY)
+    
+    YM = np.array(resYs).T
+    trX = list(trX) + list(YM)
+    trX = np.array(trX)
+            
+    for j in range(l):  
+        Ts = np.append(Ts, Ts[-1] + (Ts[1]-Ts[0]))
+    
+
+    print(len(Ts))
+    print(len(trX))    
     return Ts, trX
     
     
@@ -1156,8 +1168,8 @@ if __name__ == '__main__':
     Ts, resY = forecast2(Ts, trX)
     
     plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=20, alpha=0.5, c='green')
-    plt.scatter(Ts, trX[:,ind], s=10, c='black')
-    plt.plot(Ts, trX[:,ind], linewidth=1, c='blue')
+    plt.scatter(Ts, resY[:,ind], s=10, c='black')
+    plt.plot(Ts, resY[:,ind], linewidth=1, c='blue')
     #plt.plot()
     plt.show()
     

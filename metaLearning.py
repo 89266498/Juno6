@@ -7,7 +7,7 @@ import os, sys
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV
+from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV, LassoCV
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 #from sklearn.linear_model import LinearRegression
@@ -526,156 +526,156 @@ def fitPattern(xseries, plot=False):
     p = lambda t: list(map(f,t))
     return p
     
-def forecast(y, X=None, model=None, predLength=0.3, plot=False):
+# def forecast(y, X=None, model=None, predLength=0.3, plot=False):
     
-    print("Forecasting time-series...")
-    pxs = []
+#     print("Forecasting time-series...")
+#     pxs = []
 
     
-    if not X:
-        print("Predicting time-series without assuming any underlying relationships...")
-        T = [v[0] for v in y]
-        p = fitPattern(y) # <int(T*train)
-        maxT = np.max(T)
+#     if not X:
+#         print("Predicting time-series without assuming any underlying relationships...")
+#         T = [v[0] for v in y]
+#         p = fitPattern(y) # <int(T*train)
+#         maxT = np.max(T)
         
-        dT = T[-1] - T[-2]
-        # if fast:
-        #     dT = dT * 100
-        counts = int(len(T) * (predLength))
+#         dT = T[-1] - T[-2]
+#         # if fast:
+#         #     dT = dT * 100
+#         counts = int(len(T) * (predLength))
         
-        k1 = min(50, len(T))
-        indices1 = random.sample(range(len(T)), k1)
+#         k1 = min(50, len(T))
+#         indices1 = random.sample(range(len(T)), k1)
         
-        T = [v for i, v in enumerate(T) if i in indices1] + [T[-1] + (count+1)*dT for i, count in enumerate(range(counts)) if i % 10 == 0]
-        #T = [T[-1], [T[-1] + (count+1)*dT for count in range(counts)][-1]]
-        ypred = np.clip(p(T), 0, np.inf)
-        noise = np.std(np.array([v[1] for i, v in enumerate(y) if i in indices1]) - ypred[:k1])
-        bandwidth = noise*3
-        #print("bandwidth", bandwidth)
-        Upp = np.clip(ypred + bandwidth, 0, np.inf)
-        Lwr = np.clip(ypred - bandwidth, 0, np.inf)
+#         T = [v for i, v in enumerate(T) if i in indices1] + [T[-1] + (count+1)*dT for i, count in enumerate(range(counts)) if i % 10 == 0]
+#         #T = [T[-1], [T[-1] + (count+1)*dT for count in range(counts)][-1]]
+#         ypred = np.clip(p(T), 0, np.inf)
+#         noise = np.std(np.array([v[1] for i, v in enumerate(y) if i in indices1]) - ypred[:k1])
+#         bandwidth = noise*3
+#         #print("bandwidth", bandwidth)
+#         Upp = np.clip(ypred + bandwidth, 0, np.inf)
+#         Lwr = np.clip(ypred - bandwidth, 0, np.inf)
         
         
         
-        if plot:
-            plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
-            plt.scatter(T, ypred, s=1, alpha=1, color='black')
-            plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
-            plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
-            plt.axvline(x=maxT)
-            plt.show()
+#         if plot:
+#             plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
+#             plt.scatter(T, ypred, s=1, alpha=1, color='black')
+#             plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
+#             plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
+#             plt.axvline(x=maxT)
+#             plt.show()
     
-    else:
-        print('Dependent inputs time-series detected, using inputs to predict output...')
-        for i, x in enumerate(X):
-            #print('x', x)
+#     else:
+#         print('Dependent inputs time-series detected, using inputs to predict output...')
+#         for i, x in enumerate(X):
+#             #print('x', x)
             
-            # print('train T', int(T*train))
-            print("Analyzing individual input time-series...")
-            p = fitPattern(x) # <int(T*train)
+#             # print('train T', int(T*train))
+#             print("Analyzing individual input time-series...")
+#             p = fitPattern(x) # <int(T*train)
             
-            pxs.append(p)
+#             pxs.append(p)
         
-        T = [v[0] for v in y]
-        #print(T)
-        maxT = np.max(T)
-        dT = int((T[-1] - T[0])/(len(T)-1))
-        # if fast:
-        #     dT = dT * 100
-        #     step = int(len(T)/100)+1
-        # else:
-        #     step = 1
-        counts = int(len(T) * (predLength))
+#         T = [v[0] for v in y]
+#         #print(T)
+#         maxT = np.max(T)
+#         dT = int((T[-1] - T[0])/(len(T)-1))
+#         # if fast:
+#         #     dT = dT * 100
+#         #     step = int(len(T)/100)+1
+#         # else:
+#         #     step = 1
+#         counts = int(len(T) * (predLength))
     
-        k1 = min(50, len(T))
-        indices1 = random.sample(range(len(T)), k1)
+#         k1 = min(50, len(T))
+#         indices1 = random.sample(range(len(T)), k1)
         
-        T = [v for i, v in enumerate(T) if i in indices1] + [T[-1] + (count+1)*dT for i, count in enumerate(range(counts)) if i % 10 == 0]
+#         T = [v for i, v in enumerate(T) if i in indices1] + [T[-1] + (count+1)*dT for i, count in enumerate(range(counts)) if i % 10 == 0]
         
-        #T = T + [T[-1] + (count+1)*dT for count in range(counts)]
-        #T = [T[-1], [T[-1] + (count+1)*dT for count in range(counts)][-1]]
-        #print(T)
-        PX = np.array([p(T) for p in pxs]).T
-        ypred1 = model.predict(PX)
+#         #T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+#         #T = [T[-1], [T[-1] + (count+1)*dT for count in range(counts)][-1]]
+#         #print(T)
+#         PX = np.array([p(T) for p in pxs]).T
+#         ypred1 = model.predict(PX)
         
-        T = [v[0] for v in y]
-        p = fitPattern(y) # <int(T*train)
-        maxT = np.max(T)
+#         T = [v[0] for v in y]
+#         p = fitPattern(y) # <int(T*train)
+#         maxT = np.max(T)
         
-        dT = int((T[-1] - T[0])/(len(T)-1))
-        # if fast:
-        #     dT = dT * 100
-        #     step = int(len(T)/100) + 1
-        # else:
-        #     step = 1
-        counts = int(len(T) * (predLength))
+#         dT = int((T[-1] - T[0])/(len(T)-1))
+#         # if fast:
+#         #     dT = dT * 100
+#         #     step = int(len(T)/100) + 1
+#         # else:
+#         #     step = 1
+#         counts = int(len(T) * (predLength))
         
-        # k1 = min(100, len(T))
-        # indices1 = random.sample(range(len(T)), k1)
+#         # k1 = min(100, len(T))
+#         # indices1 = random.sample(range(len(T)), k1)
         
-        T = [v for i, v in enumerate(T) if i in indices1] + [T[-1] + (count+1)*dT for i, count in enumerate(range(counts)) if i % 10 == 0]
-        #T = T + [T[-1] + (count+1)*dT for count in range(counts)]
-        #T = [T[-1], [T[-1] + (count+1)*dT for count in range(counts)][-1]]
-        ypred2 = p(T)
+#         T = [v for i, v in enumerate(T) if i in indices1] + [T[-1] + (count+1)*dT for i, count in enumerate(range(counts)) if i % 10 == 0]
+#         #T = T + [T[-1] + (count+1)*dT for count in range(counts)]
+#         #T = [T[-1], [T[-1] + (count+1)*dT for count in range(counts)][-1]]
+#         ypred2 = p(T)
         
-        #ypred = (ypred1 + ypred2)/2
-        c = np.array([ypred1, ypred2])
-        ymax = np.max(c, axis=0)
-        ymin = np.min(c, axis=0)
-        ypred = np.clip(np.mean(c, axis=0), 0, np.inf)
+#         #ypred = (ypred1 + ypred2)/2
+#         c = np.array([ypred1, ypred2])
+#         ymax = np.max(c, axis=0)
+#         ymin = np.min(c, axis=0)
+#         ypred = np.clip(np.mean(c, axis=0), 0, np.inf)
 
-        noise = np.std(np.array([v[1] for i, v in enumerate(y) if i in indices1]) - ypred[:k1])
-        bandwidth = noise*6
-        #print("bandwidth", bandwidth)
-        Upp = np.clip(np.mean(np.array([ypred + bandwidth, ymax]), axis=0), 0, np.inf)
-        Lwr = np.clip(np.mean(np.array([ypred - bandwidth, ymin]), axis=0), 0, np.inf)
-        # Upp = ypred + bandwidth
-        # Lwr = np.abs(ypred - bandwidth)
+#         noise = np.std(np.array([v[1] for i, v in enumerate(y) if i in indices1]) - ypred[:k1])
+#         bandwidth = noise*6
+#         #print("bandwidth", bandwidth)
+#         Upp = np.clip(np.mean(np.array([ypred + bandwidth, ymax]), axis=0), 0, np.inf)
+#         Lwr = np.clip(np.mean(np.array([ypred - bandwidth, ymin]), axis=0), 0, np.inf)
+#         # Upp = ypred + bandwidth
+#         # Lwr = np.abs(ypred - bandwidth)
         
-        if plot:
-            plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
-            # plt.scatter(T, ypred, s=0.5, alpha=1, color='blue')
-            # plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
-            # plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
-            plt.plot(T, ypred, linewidth=1, color='blue')
-            plt.plot(T, Upp, linewidth=1, color='orange')
-            plt.plot(T, Lwr, linewidth=1, color='red')
-            plt.axvline(x=maxT)
-            plt.show()
+#         if plot:
+#             plt.scatter([v[0] for v in y], [v[1] for v in y], s=0.5, alpha=1, color='green')
+#             # plt.scatter(T, ypred, s=0.5, alpha=1, color='blue')
+#             # plt.scatter(T, Upp, s=0.5, alpha=1, color='orange')
+#             # plt.scatter(T, Lwr, s=0.5, alpha=1, color='red')
+#             plt.plot(T, ypred, linewidth=1, color='blue')
+#             plt.plot(T, Upp, linewidth=1, color='orange')
+#             plt.plot(T, Lwr, linewidth=1, color='red')
+#             plt.axvline(x=maxT)
+#             plt.show()
     
-    yout = list(zip(T, ypred))
-    yupp = list(zip(T, Upp))
-    ylwr = list(zip(T, Lwr))
-    print(ylwr[-1][1])
-    print(y[-1][1])
-    print(yupp[-1][1])
-    print(indices1[-1])
+#     yout = list(zip(T, ypred))
+#     yupp = list(zip(T, Upp))
+#     ylwr = list(zip(T, Lwr))
+#     print(ylwr[-1][1])
+#     print(y[-1][1])
+#     print(yupp[-1][1])
+#     print(indices1[-1])
     
-    anomalies = []
-    vals = []
-    for i,v in enumerate(y):
-        if i in indices1:
-            vals.append(v[1])
+#     anomalies = []
+#     vals = []
+#     for i,v in enumerate(y):
+#         if i in indices1:
+#             vals.append(v[1])
     
-    for i, v in enumerate(vals):
-        if not (ylwr[i][1] <= v <= yupp[i][1]):
-            anomalies.append(v)
+#     for i, v in enumerate(vals):
+#         if not (ylwr[i][1] <= v <= yupp[i][1]):
+#             anomalies.append(v)
     
-    lwr = ylwr[k1][1]
-    upp = yupp[k1][1]
-    isAnomaly = not lwr <= y[-1][1] <= upp
-    
-    
+#     lwr = ylwr[k1][1]
+#     upp = yupp[k1][1]
+#     isAnomaly = not lwr <= y[-1][1] <= upp
     
     
-    # anomalies = [v for i, v in enumerate(y) if not (ylwr[i][1] <= v[1] <= yupp[i][1]) and i in indices1]
-    anomalyRate = len(anomalies)/len([y for i, y in enumerate(y) if i in indices1])
-    print('anomalies', anomalies)
-    print('anomalyRate', anomalyRate)
     
-    ydict = {'pred':yout, 'high': yupp, 'low': ylwr, 'anomalyRate': anomalyRate, 'anomalies': anomalies, 'isAnomaly': isAnomaly, 'highNow': upp, 'lowNow': lwr, 'yNow': y[-1][1]}
     
-    return ydict
+#     # anomalies = [v for i, v in enumerate(y) if not (ylwr[i][1] <= v[1] <= yupp[i][1]) and i in indices1]
+#     anomalyRate = len(anomalies)/len([y for i, y in enumerate(y) if i in indices1])
+#     print('anomalies', anomalies)
+#     print('anomalyRate', anomalyRate)
+    
+#     ydict = {'pred':yout, 'high': yupp, 'low': ylwr, 'anomalyRate': anomalyRate, 'anomalies': anomalies, 'isAnomaly': isAnomaly, 'highNow': upp, 'lowNow': lwr, 'yNow': y[-1][1]}
+    
+#     return ydict
 
 def controlStrategy(y,X, model, control=[0], maximize=True, predLength=0.3, ydict=None):
     #X is a list of dependent time-series, y is the target time-series.
@@ -882,7 +882,7 @@ def analysis(fis, forecasts, fids, controlStrategies=None):
     summary = []
     if anomalyFids:
         for ind, anomalyFid in enumerate(anomalyFids):
-            sentence = '指标' + str(anomalyFid) + '出现异常：当前值' + str(round(forecasts[ind]['yNow'],2)) + '不在正常范围内' + ' (' + str(round(forecasts[ind]['lowNow'],2)) + '~' + str(round(forecasts[ind]['highNow'],2))  + ') '
+            sentence = '指标' + str(anomalyFid) + '出现异常：当前值' + str(np.round(forecasts[ind]['yNow'],2)) + '不在正常范围内' + ' (' + str(np.round(forecasts[ind]['lowNow'],2)) + '~' + str(np.round(forecasts[ind]['highNow'],2))  + ') '
             summary.append(sentence)
         
     if not summary:
@@ -929,33 +929,7 @@ def multiForecast(X, models, fids, predLength=0.3):
     return result
     #ydict = forecast(y, X=None, model=None, predLength=predLength, fast=True, plot=False)
 
-def controlStrategiesRandom(X, models, fids, predLength=0.3):
-    
-    y = random.choice(X)
-    targetIndex = X.index(y)
-    maximization = round(random.random())
-    mode = 'max' if maximization else 'min'
-    
-    model = models[targetIndex][0]
-    
-    controlVars = random.sample(fids[:targetIndex]+fids[targetIndex+1:], k=random.choice(range(1,4)))
-    print('controlVars', controlVars)
-    
-    controlVarsIndices = []
-    newfids = fids[:targetIndex]+fids[targetIndex+1:]
-    for cv in controlVars:
-        controlVarsIndices.append(newfids.index(cv))
-    
-    
-    cs = controlStrategy(y,X[:targetIndex] + X[targetIndex+1:], model, control=controlVarsIndices, maximize=maximization, predLength=predLength)
-    
-    cs['last']['X'].insert(targetIndex, cs['last']['y'])
-    cs['base']['X'].insert(targetIndex, cs['base']['y'])
-    cs['opt']['X'].insert(targetIndex, cs['opt']['y'])
-    
-    
-    result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, 'fidsList': fids, **cs}
-    return result
+
     
 def generateJson(rows=100, columns=5, outputFilename=None):
     requestJs(n=rows)
@@ -977,6 +951,60 @@ def generateJson(rows=100, columns=5, outputFilename=None):
     with open(path / 'data' / 'fake-data' / outputFilename, 'w') as f:
         f.write(json.dumps(jsdict))
     print('JSON done.')
+
+
+def generateJson2(request=None, outputFilename=None, plot=False):
+    if request:
+        requestJs()
+    X, fids, mapping, controlDecision = loadData()
+    I = [i for i,x in enumerate(X) if  len(x) > 300] # if 2 < len(x) < 300
+    ind = random.choice(I)
+    # with open(path / 'data' / 'fake-data' / 'randTimeSeries.json', 'r') as f:
+    #     X = json.loads(f.read())
+    # ind = random.choice(range(len(X)))
+    
+    trX = knnRegress(X, n_points=10)
+    
+    forecasts = forecast2(trX, fids=fids, S=0.5, L=0.5)
+    
+    forecast = forecasts['forecast'][ind]
+    resY = forecast['pred']
+    high = forecast['high']
+    low = forecast['low']
+    
+    if plot:
+        plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=20, alpha=0.5, c='green')
+        #plt.scatter(Ts, trX[:,ind], s=50, c='yellow')
+        plt.scatter([r[0] for r in resY], [r[1] for r in resY] , s=10, c='black')
+        plt.plot([r[0] for r in resY], [r[1] for r in resY], linewidth=1, c='blue')
+        
+        plt.axvline(trX[0][-1][0])
+        plt.plot([r[0] for r in high], [r[1] for r in high], linewidth=1, c='orange')
+        plt.plot([r[0] for r in low], [r[1] for r in low], linewidth=1, c='red')
+        
+        #plt.plot()
+        plt.show()
+    
+    #coef = C[ind]
+    #intercept = I[ind]
+    #print('coefs', coef)
+    #print('intercept', intercept)
+    #print('mag', np.linalg.norm(coef))
+    #print('sum', np.sum(coef))
+    #plt.scatter(range(len(coef)), coef, s=20, alpha=0.8)
+    #plt.axhline()
+    #plt.show()
+    models, fis = featureImportances2(trX)
+    controlStrategy = controlStrategiesRandom(forecasts, models, fids)
+    print(forecasts)
+    sentences = analysis(fis, forecasts, fids)
+    #print(sentences)
+    jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategy, 'summary': sentences}
+    if not outputFilename:
+        outputFilename = 'output.json'
+    with open(path / 'data' / 'fake-data' / outputFilename, 'w') as f:
+        f.write(json.dumps(jsdict))
+    print('JSON done.')
     
 def knnRegress(X, n_points=30):
     #for downsampling, denoising and synchronizing signals
@@ -988,16 +1016,16 @@ def knnRegress(X, n_points=30):
     minT = int(min(T))
     maxT = int(max(T))
     
-    Ts = range(minT, maxT+1*int((maxT-minT)/n_points), int((maxT-minT)/n_points))
+    Ts = range(minT, maxT+0*int((maxT-minT)/n_points), int((maxT-minT)/n_points))
     
     trX = []
     for t in Ts:
         trx = []
         for x in X:
-            ts = (1/(np.abs((np.array([r[0] for r in x if r[0]]) -  t)) + 0.1))**1 # <= (minT + (t-minT)*1)
+            ts = (1/(np.abs((np.array([r[0] for r in x]) -  t)) + 0.1))**3 # <= (minT + (t-minT)*1)
             ps = ts/np.sum(ts)
             #print('sum', round(np.sum(ps),2))
-            xs = np.array([r[1] for r in x if r[0]]) # <= (minT + (t-minT)*1)
+            xs = np.array([r[1] for r in x]) # <= (minT + (t-minT)*1)
             rx = np.dot(xs,ps)
             trx.append(rx)
         trX.append(trx)
@@ -1005,9 +1033,17 @@ def knnRegress(X, n_points=30):
     trX = np.array(trX)
     Ts = np.array(Ts)
     
-    return Ts, trX
+    resX = np.array([list(zip(Ts, x)) for x in trX.T])
+    
+    #print(resX[0])
+    return resX
 
-def forecast2(Ts,trX, S=0.5, L=0.5):
+def forecast2(trX, fids, S=0.5, L=0.5, anomalyRate=0.001):
+    print("Forecasting...")
+    
+    Ts = np.array([r[0] for r in trX[0]])
+    trX = [[r[1] for r in x] for x in trX]
+    trX = np.array(trX).T
     s = int(len(trX)*S)
     l = int(len(trX)*L)
     F = len(trX[0])
@@ -1015,6 +1051,10 @@ def forecast2(Ts,trX, S=0.5, L=0.5):
     #print(len(Ts))
     regrs = []
     resYs = []
+    C = []
+    I = []
+    upps = []
+    lwrs = []
     for ind in range(F):
         #print('training', ind, '/', F)
         trainX = np.array([trX[i:s+i, ind] for i in range(len(trX)-s)])
@@ -1022,43 +1062,90 @@ def forecast2(Ts,trX, S=0.5, L=0.5):
         trainY = np.array([trX[s+i,ind] for i in range(len(trX)-s)])
         # print(np.shape(trainX))
         #print(np.shape(trainY))
-        regr = RidgeCV(normalize=True, alphas=[1e-7,1e-6,1e-5,1e-4,1e-3, 1e-2, 1e-1, 1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16]).fit(trainX, trainY)  #RidgeCV(normalize=True, alphas=[1e-7,1e-6,1e-5,1e-4,1e-3, 1e-2, 1e-1, 1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7])
+        regr = BayesianRidge(normalize=False, fit_intercept=False).fit(trainX, trainY)  #RidgeCV(normalize=True, alphas=[1e-7,1e-6,1e-5,1e-4,1e-3, 1e-2, 1e-1, 1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7]), LassoCV(normalize=True, fit_intercept=False, alphas=10**np.array(list(range(2,8))))
+
+        coefs = regr.coef_
+
+        intercept = regr.intercept_
+        
+        
+        #print('intercept', intercept)
+        
+        #coefs = coefs / np.linalg.norm(coefs)
+        #coefs = np.clip(coefs, -0.5,0.5) 
+        #print('mag',np.linalg.norm(coefs))
+        #print('coefs', coefs)
+        C.append(coefs)
+        I.append(intercept)
         regrs.append(regr)
         #print('training done')
         resY = []
-        
+        upp = []
+        lwr = []
         fcX = trX[-s:, ind]
+        
+        maxX = np.percentile(trX[:,ind], (1 - anomalyRate/2)*100)
+        minX = np.percentile(trX[:,ind], anomalyRate*100/2)
+        
         #print('forecasting')
         for j in range(l):
             #print(fcX)
             #print(np.shape(fcX))
             #print(np.array([fcX]))
-            fcY = regr.predict([fcX])
+            fcY, std = regr.predict([fcX], return_std=True)#, return_std=True
+            #fcY = [np.dot(coefs, fcX) + intercept]
             #print(fcY)
+            #print(std)
             #Y = np.append(Y, fcY[0])
             fcX =  np.append(fcX, fcY[0])
+            upp.append(list(np.clip(fcY[0] + 3*std, 0, np.inf))[0])
+            lwr.append(list(np.clip(fcY[0] - 3*std, 0, np.inf))[0])
             fcX = fcX[-s:]
             #trX = trX.T
-            resY.append(fcY[0])
+            resY.append(np.clip(fcY[0], 0 , np.inf))
+
         resYs.append(resY)
-    
+        upps.append(upp)
+        lwrs.append(lwr)
+        
     YM = np.array(resYs).T
     trX = list(trX) + list(YM)
     trX = np.array(trX)
-            
+    upps = upps
+    lwrs = lwrs
     for j in range(l):  
         Ts = np.append(Ts, Ts[-1] + (Ts[1]-Ts[0]))
     
+    Ts1 = Ts[-l:]
 
-    print(len(Ts))
-    print(len(trX))    
-    return Ts, trX
+    resX = [list(zip(list(Ts), list(x))) for x in trX.T]
+    upps = [list(zip(list(Ts1), list(x))) for x in upps]
+    lwrs = [list(zip(list(Ts1), list(x))) for x in lwrs]
+    #print(len(Ts))
+    #print(len(trX))  
+    ydicts = []
+    for i, yout in enumerate(resX):
+        isAnomaly = not (lwrs[i][0][1] <= yout[-l][1] <= upps[i][0][1])
+        ydict = {'pred':yout, 'high': upps[i], 'low': lwrs[i], 'anomalyRate': anomalyRate, 'isAnomaly': isAnomaly, 'highNow': upps[i][0][1], 'lowNow': lwrs[i][0][1], 'yNow': yout[-l][1], 'tNow': Ts[-1]}
+        ydicts.append(ydict)
+    
+    result = {'datetime':time.time(), 'forecast': []}
+    for i, ydict in enumerate(ydicts):
+        fid = fids[i]
+        result['forecast'].append({'fid': fid, **ydict})
+    
+    return result
     
     
+def analyzeForecast():
     ...
-
-def featureImportances2(Ts, trX):
+def featureImportances2(trX):
     
+    print("Analyzing Feature Importances...")
+    
+    Ts = np.array([r[0] for r in trX[0]])
+    trX = [[r[1] for r in x] for x in trX]
+    trX = np.array(trX).T
     models = []
     fis = []
     M = trX.T
@@ -1069,9 +1156,15 @@ def featureImportances2(Ts, trX):
         trainX = np.array(trainX).T
         
         #print(np.std(trainX))
-        regr = RandomForestRegressor(n_estimators=30, max_features='sqrt').fit(trainX, trX[:,i])
-        #trainX[:,i] = vec
+        regr = RandomForestRegressor(n_estimators=10, max_features='sqrt').fit(trainX, trX[:,i])
         fi = list(regr.feature_importances_)
+        
+        # regr = BayesianRidge(normalize=True, fit_intercept=True).fit(trainX, trX[:,i])
+        # #trainX[:,i] = vec
+        # coefs = regr.coef_
+        # fi = list(np.abs(coefs)/np.sum(np.abs(coefs)))
+        
+        
         fi.insert(i,-1)
         models.append(regr)
         fis.append(fi)
@@ -1082,6 +1175,135 @@ def featureImportances2(Ts, trX):
     #fis = np.array(fis)
     return models, fis
 
+def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True):
+
+    if not control:
+        print('No control variables defined, nothing to control...')
+        return None, None
+    elif control == [-1]:
+        control = list(range(len(X)))
+    
+    print('Figuring out feasible region for output variable...')
+    ydict = forecasts['forecast'][yInd]
+    tmax = ydict['tNow']
+    print('tmax', tmax)
+    print('Figuring out feasible regions for input variables...')
+    Xdict = forecasts['forecast'][:yInd] + forecasts['forecast'][yInd+1:]
+    #print([[v[1] for v in x['low']] for x in Xdict])
+    # Xlow = [np.percentile([v[1] for v in x['pred'][:int(tmax*(1-predLength))]], 25) for x in Xdict]
+    # Xhigh = [np.percentile([v[1] for v in x['high'][:int(tmax*(1-predLength))]], 75) for x in Xdict]
+    
+    
+    
+    Xlow = [np.percentile([v[1] for v in x['pred'] if v[0] <= tmax], 5) for x in Xdict]
+    Xhigh = [np.percentile([v[1] for v in x['pred'] if v[0] <= tmax], 95) for x in Xdict]
+
+    tpred = ydict['pred'][-1][0]
+    print('Prediction tpred',tpred)
+    
+    # #synchronizing xinput on tpred
+    # print('Synchronizing inputs on tpred..')
+    # xin = [x['pred'][-1000:] for x in Xdict]
+    # print([x['pred'][-1] for x in Xdict])
+    
+    # pxs = [regress([v[0] for v in x], [v[1] for v in x]) for x in xin] #fitPattern(x)
+    
+    xbase = np.array([x['pred'][-1][1] for x in Xdict])
+
+    print('Using control variables to define Evolutionary Strategy variance...')
+    variance = xbase/10
+    #print(variance)
+    for i, var in enumerate(variance):
+        print('control', control)
+        if i not in control:
+            variance[i] = 0
+            Xlow[i] = 0
+            Xhigh[i] = np.inf
+    print('Xlow', Xlow)
+    print('Xhigh', Xhigh)
+    
+    if maximize:
+        optimize = np.argmax
+    else:
+        optimize = np.argmin
+    
+    xopt = xbase
+    print('Using Evolutionary Strategy to find optimal control...')
+    for iteration in range(10):
+        print('iteration', iteration)
+        xin = np.array([np.random.normal(xopt, variance) for i in range(30)] + [xopt])
+        #print('xinput',xin)
+        xin = [np.clip(x, Xlow, Xhigh) for x in xin]
+
+        yout = np.clip(model.predict(xin), 0, np.inf)
+        #print('yout',yout)
+        
+        tolerance = np.std(yout)/np.mean(yout)
+        print('tolerance', tolerance)
+        ind = optimize(yout)
+        xopt1 = xin[ind]
+        dx = np.mean(np.abs(np.array(xopt) - np.array(xopt1)))/np.mean(xopt)
+        yopt = yout[ind]
+        xopt = xopt1
+        print('dx', dx)
+        variance *= dx*10*(iteration+1)
+        print('variance', variance)
+        if tolerance < 0.0001:
+            print('Best solution found by convergence...')
+            break
+        
+    print('control', control)
+    tlast = tmax
+    xlast = [x['yNow'] for x in Xdict]
+    ylast = ydict['yNow']
+    print('tlast', tlast)
+    print('Xlast', xlast)
+    print('Ylast', ylast)
+    print('\n')
+    
+    ybase = np.clip(model.predict([xbase])[0],0, np.inf)
+    print('tbase', tpred)
+    print('xbase', xbase)
+    print('ybase', ybase)
+    print('\n')
+    
+    topt = tpred
+    print('topt', tpred)
+    print('xopt', xopt)
+    print('yopt', yopt)
+    
+    result = {'last':{'t': tlast, 'X':xlast, 'y':ylast},
+              'base':{'t':tpred, 'X':list(xbase), 'y':ybase},
+              'opt':{'t':tpred, 'X': list(xopt), 'y':yopt}}
+    
+    return result
+
+def controlStrategiesRandom(forecasts, models, fids):
+    y = random.choice(forecasts['forecast'])
+    targetIndex = forecasts['forecast'].index(y)
+    maximization = round(random.random())
+    mode = 'max' if maximization else 'min'
+    
+    model = models[targetIndex]
+    
+    controlVars = random.sample(fids[:targetIndex]+fids[targetIndex+1:], k=random.choice(range(1,4)))
+    print('controlVars', controlVars)
+    
+    controlVarsIndices = []
+    newfids = fids[:targetIndex]+fids[targetIndex+1:]
+    for cv in controlVars:
+        controlVarsIndices.append(newfids.index(cv))
+    
+    
+    cs = controlStrategy2(targetIndex, forecasts, model, control=controlVarsIndices, maximize=maximization)
+    
+    cs['last']['X'].insert(targetIndex, cs['last']['y'])
+    cs['base']['X'].insert(targetIndex, cs['base']['y'])
+    cs['opt']['X'].insert(targetIndex, cs['opt']['y'])
+    
+    print(controlVars)
+    result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, 'fidsList': fids, **cs}
+    return result
 
 
 if __name__ == '__main__':
@@ -1156,27 +1378,48 @@ if __name__ == '__main__':
     
     ######################################
     t1 = time.time()
-    #X, fids, mapping, controlDecision = loadData()
-    #I = [i for i,x in enumerate(X) if 2 < len(x) < 300]
-    #ind = random.choice(I)
-    with open(path / 'data' / 'fake-data' / 'randTimeSeries.json', 'r') as f:
-        X = json.loads(f.read())
-    ind = random.choice(range(len(X)))
+    # X, fids, mapping, controlDecision = loadData()
+    # I = [i for i,x in enumerate(X) if  len(x) > 300] # if 2 < len(x) < 300
+    # ind = random.choice(I)
+    # # with open(path / 'data' / 'fake-data' / 'randTimeSeries.json', 'r') as f:
+    # #     X = json.loads(f.read())
+    # # ind = random.choice(range(len(X)))
     
-    Ts, trX = knnRegress(X, n_points=30)
+    # trX = knnRegress(X, n_points=10)
     
-    Ts1, resY = forecast2(Ts, trX, L=2)
+    # forecasts = forecast2(trX, S=0.5, L=0.5)
     
-    plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=20, alpha=0.5, c='green')
-    plt.scatter(Ts, trX[:,ind], s=50, c='teal')
-    plt.scatter(Ts1, resY[:,ind], s=10, c='black')
-    plt.plot(Ts1, resY[:,ind], linewidth=1, c='blue')
+    # forecast = forecasts['forecast'][ind]
+    # resY = forecast['pred']
+    # high = forecast['high']
+    # low = forecast['low']
     
-    plt.axvline(Ts[-1])
-    #plt.plot()
-    plt.show()
+    # plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=20, alpha=0.5, c='green')
+    # #plt.scatter(Ts, trX[:,ind], s=50, c='yellow')
+    # plt.scatter([r[0] for r in resY], [r[1] for r in resY] , s=10, c='black')
+    # plt.plot([r[0] for r in resY], [r[1] for r in resY], linewidth=1, c='blue')
     
-    #models, fis = featureImportances2(Ts, trX)
+    # plt.axvline(trX[0][-1][0])
+    # plt.plot([r[0] for r in high], [r[1] for r in high], linewidth=1, c='orange')
+    # plt.plot([r[0] for r in low], [r[1] for r in low], linewidth=1, c='red')
+    
+    # #plt.plot()
+    # plt.show()
+    
+    # #coef = C[ind]
+    # #intercept = I[ind]
+    # #print('coefs', coef)
+    # #print('intercept', intercept)
+    # #print('mag', np.linalg.norm(coef))
+    # #print('sum', np.sum(coef))
+    # #plt.scatter(range(len(coef)), coef, s=20, alpha=0.8)
+    # #plt.axhline()
+    # #plt.show()
+    # models, fis = featureImportances2(trX)
+    # controlStrategy = controlStrategiesRandom(forecasts, models, fids)
+    
+    generateJson2()
+    
     t2 = time.time()
     print('time taken', t2-t1)
     

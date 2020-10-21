@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import warnings
+warnings.filterwarnings('ignore') 
+
 from pathlib import Path
 import random
 import numpy as np
@@ -11,14 +14,26 @@ from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV, Lasso
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 #from sklearn.linear_model import LinearRegression
-import warnings
 from scipy.optimize import curve_fit
 from multiprocessing import Pool
 import pickle 
 import requests
+import progress.bar as progBar
+#from progress.bar import IncrementalBar
 
-warnings.filterwarnings('ignore') 
 path = Path('./')
+
+if not os.path.isdir(path / 'data'):
+    os.mkdir(path / 'data')
+
+if not os.path.isdir(path / 'data' / 'fake-data'):
+    os.mkdir(path / 'data' / 'fake-data')
+
+if not os.path.isdir(path / 'models'):
+    os.mkdir(path / 'models')
+    
+if not os.path.isdir(path / 'assets'):
+    os.mkdir(path / 'assets')
 
 class HiddenPrints:
     def __enter__(self):
@@ -273,7 +288,9 @@ def knnRegress(X, n_points=30):
     Ts = range(minT, maxT+0*int((maxT-minT)/n_points), int((maxT-minT)/n_points))
     
     trX = []
+    bar = progBar.Bar('Regressing data...', max=len(Ts))
     for t in Ts:
+        bar.next()
         trx = []
         for x in X:
             ts = (1/(np.abs((np.array([r[0] for r in x]) -  t)) + 0.1))**3 # <= (minT + (t-minT)*1)
@@ -283,6 +300,7 @@ def knnRegress(X, n_points=30):
             rx = np.dot(xs,ps)
             trx.append(rx)
         trX.append(trx)
+    bar.finish()
     
     trX = np.array(trX)
     Ts = np.array(Ts)
@@ -292,14 +310,15 @@ def knnRegress(X, n_points=30):
     #print(resX[0])
     return resX
 
-def forecast2(trX, fids, S=0.5, L=0.5, anomalyRate=0.001):
-    print("Forecasting...")
+def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1):
+    #print("Forecasting...")
     
     Ts = np.array([r[0] for r in trX[0]])
     trX = [[r[1] for r in x] for x in trX]
     trX = np.array(trX).T
     s = int(len(trX)*S)
     l = int(len(trX)*L)
+    a = int(len(trX)*A)
     F = len(trX[0])
     #Y = trX
     #print(len(Ts))
@@ -309,7 +328,9 @@ def forecast2(trX, fids, S=0.5, L=0.5, anomalyRate=0.001):
     I = []
     upps = []
     lwrs = []
+    bar = progBar.Bar("Forecasting features...", max=F)
     for ind in range(F):
+        bar.next()
         #print('training', ind, '/', F)
         trainX = np.array([trX[i:s+i, ind] for i in range(len(trX)-s)])
         #print(np.shape(trainX))
@@ -336,13 +357,13 @@ def forecast2(trX, fids, S=0.5, L=0.5, anomalyRate=0.001):
         resY = []
         upp = []
         lwr = []
-        fcX = trX[-s:, ind]
+        fcX = trX[-s-a:-a, ind]
         
-        maxX = np.percentile(trX[:,ind], (1 - anomalyRate/2)*100)
-        minX = np.percentile(trX[:,ind], anomalyRate*100/2)
+        # maxX = np.percentile(trX[:,ind], (1 - anomalyRate/2)*100)
+        # minX = np.percentile(trX[:,ind], anomalyRate*100/2)
         
         #print('forecasting')
-        for j in range(l):
+        for j in range(l+a):
             #print(fcX)
             #print(np.shape(fcX))
             #print(np.array([fcX]))
@@ -361,26 +382,39 @@ def forecast2(trX, fids, S=0.5, L=0.5, anomalyRate=0.001):
         resYs.append(resY)
         upps.append(upp)
         lwrs.append(lwr)
-        
+    bar.finish()
     YM = np.array(resYs).T
-    trX = list(trX) + list(YM)
+    trX = list(trX[:-a]) + list(YM)
     trX = np.array(trX)
-    upps = upps
-    lwrs = lwrs
+
     for j in range(l):  
         Ts = np.append(Ts, Ts[-1] + (Ts[1]-Ts[0]))
     
-    Ts1 = Ts[-l:]
+    Ts1 = Ts[-l-a:]
 
     resX = [list(zip(list(Ts), list(x))) for x in trX.T]
     upps = [list(zip(list(Ts1), list(x))) for x in upps]
     lwrs = [list(zip(list(Ts1), list(x))) for x in lwrs]
     #print(len(Ts))
     #print(len(trX))  
+    
     ydicts = []
     for i, yout in enumerate(resX):
-        isAnomaly = not (lwrs[i][0][1] <= yout[-l][1] <= upps[i][0][1])
-        ydict = {'pred':yout, 'high': upps[i], 'low': lwrs[i], 'anomalyRate': anomalyRate, 'isAnomaly': isAnomaly, 'highNow': upps[i][0][1], 'lowNow': lwrs[i][0][1], 'yNow': yout[-l][1], 'tNow': Ts[-1]}
+
+        dt = data[i]
+        tPrev = Ts[-l-a] 
+        tNow = Ts[-l]
+        highNow = np.max([upps[i][0][1], upps[i][a][1]])*1
+        lowNow = np.min([lwrs[i][0][1], lwrs[i][a][1]])*1
+        # highNow = np.max([r[1] for r in dt if r[0] <= tPrev])*1.5
+        # lowNow = np.min([r[1] for r in dt if r[0] <= tPrev])*0.7
+        
+        anomalies = [x for x in dt if (tPrev <= x[0] <= tNow) and not (lowNow <= x[1] <= highNow)]
+        total = len([x for x in dt if (tPrev <= x[0] <= tNow)]) + 1
+        anomalyRate = round(len(anomalies)/total,4)
+        #print('ar', anomalyRate)
+        
+        ydict = {'pred':yout, 'high': upps[i], 'low': lwrs[i], 'anomalyRate': anomalyRate, 'anomalies': anomalies, 'highNow': highNow, 'lowNow': lowNow, 'yNow': yout[-l][1], 'tPrev': tPrev, 'tNow': tNow }
         ydicts.append(ydict)
     
     result = {'datetime':time.time(), 'forecast': []}
@@ -390,12 +424,10 @@ def forecast2(trX, fids, S=0.5, L=0.5, anomalyRate=0.001):
     
     return result
     
-    
-def analyzeForecast():
-    ...
+
 def featureImportances2(trX):
     
-    print("Analyzing Feature Importances...")
+    #print()
     
     #Ts = np.array([r[0] for r in trX[0]])
     trX = [[r[1] for r in x] for x in trX]
@@ -403,34 +435,38 @@ def featureImportances2(trX):
     models = []
     fis = []
     M = trX.T
-    for i, trx in enumerate(M):
-        #print(i, '/', len(M)) if i % 100 == 0 else None
-        trainX = [[v for v in r] for r in trX.T]
-        trainX = trainX[:i] + trainX[i+1:]
-        trainX = np.array(trainX).T
+    #bar = IncrementalBar('Countdown', max = len(M))
+    #print(bar)
+    with progBar.Bar("Analyzing Feature Importances...", max=len(M)) as bar:
+        for i, trx in enumerate(M):
+            #print('\r',i, '/', len(M)) if i % 100 == 0 else None
+            bar.next()
+            trainX = [[v for v in r] for r in trX.T]
+            trainX = trainX[:i] + trainX[i+1:]
+            trainX = np.array(trainX).T
+            
+            #print(np.std(trainX))
+            regr = RandomForestRegressor(n_estimators=10, max_features='sqrt').fit(trainX, trX[:,i])
+            fi = list(regr.feature_importances_)
+            
+            # regr = BayesianRidge(normalize=True, fit_intercept=True).fit(trainX, trX[:,i])
+            # #trainX[:,i] = vec
+            # coefs = regr.coef_
+            # fi = list(np.abs(coefs)/np.sum(np.abs(coefs)))
+            
+            
+            fi.insert(i,-1)
+            models.append(regr)
+            fis.append(fi)
         
-        #print(np.std(trainX))
-        regr = RandomForestRegressor(n_estimators=10, max_features='sqrt').fit(trainX, trX[:,i])
-        fi = list(regr.feature_importances_)
-        
-        # regr = BayesianRidge(normalize=True, fit_intercept=True).fit(trainX, trX[:,i])
-        # #trainX[:,i] = vec
-        # coefs = regr.coef_
-        # fi = list(np.abs(coefs)/np.sum(np.abs(coefs)))
-        
-        
-        fi.insert(i,-1)
-        models.append(regr)
-        fis.append(fi)
-
     
     print('completed')
         #fis.append(fi)
     #fis = np.array(fis)
     return models, fis
 
-def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True):
-
+def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterations=5):
+    
     if not control:
         print('No control variables defined, nothing to control...')
         return None, None
@@ -446,8 +482,8 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True):
 
     
     
-    Xlow = [np.percentile([v[1] for v in x['pred'] if v[0] <= tmax], 5) for x in Xdict]
-    Xhigh = [np.percentile([v[1] for v in x['pred'] if v[0] <= tmax], 95) for x in Xdict]
+    Xlow = [np.percentile([v[1] for v in x['pred'] if v[0] <= tmax], 1) for x in Xdict]
+    Xhigh = [np.percentile([v[1] for v in x['pred'] if v[0] <= tmax], 99) for x in Xdict]
 
     tpred = ydict['pred'][-1][0]
     print('Prediction tpred',tpred)
@@ -473,8 +509,10 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True):
     
     xopt = xbase
     print('Using Evolutionary Strategy to find optimal control...')
-    for iteration in range(5):
-        print('iteration', iteration)
+    bar = progBar.Bar('Evolving solutions...', max=iterations)
+    for iteration in range(iterations):
+        #print('iteration', iteration)
+        bar.next()
         xin = np.array([np.random.normal(xopt, variance) for i in range(30)] + [xopt])
         #print('xinput',xin)
         xin = [np.clip(x, Xlow, Xhigh) for x in xin]
@@ -483,43 +521,43 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True):
         #print('yout',yout)
         
         tolerance = np.std(yout)/np.mean(yout)
-        print('tolerance', tolerance)
+        #print('tolerance', tolerance)
         ind = optimize(yout)
         xopt1 = xin[ind]
         dx = np.mean(np.abs(np.array(xopt) - np.array(xopt1)))/np.mean(xopt)
         yopt = yout[ind]
         xopt = xopt1
-        print('dx', dx)
+        #print('dx', dx)
         variance *= dx*10*(iteration+1)
-        print('variance', variance)
+        #print('variance', variance)
         if tolerance < 0.0001:
             print('Best solution found by convergence...')
             break
-        
-    print('control', control)
+    bar.finish()
+    #print('control', control)
     tlast = tmax
     xlast = [x['yNow'] for x in Xdict]
     ylast = ydict['yNow']
-    print('tlast', tlast)
+    #print('tlast', tlast)
     #print('Xlast', xlast)
-    print('Ylast', ylast)
-    print('\n')
+    #print('Ylast', ylast)
+    #print('\n')
     
     ybase = np.clip(model.predict([xbase])[0],0, np.inf)
-    print('tbase', tpred)
+    #print('tbase', tpred)
     #print('xbase', xbase)
-    print('ybase', ybase)
-    print('\n')
+    #print('ybase', ybase)
+    #print('\n')
     
     topt = tpred
-    print('topt', tpred)
+    #print('topt', tpred)
     #print('xopt', xopt)
-    print('yopt', yopt)
+    #print('yopt', yopt)
     
     result = {'last':{'t': tlast, 'X':xlast, 'y':ylast},
               'base':{'t':tpred, 'X':list(xbase), 'y':ybase},
               'opt':{'t':tpred, 'X': list(xopt), 'y':yopt}}
-    
+    #print(result)
     return result
 
 def controlStrategiesRandom(forecasts, models, fids):
@@ -531,7 +569,7 @@ def controlStrategiesRandom(forecasts, models, fids):
     model = models[targetIndex]
     
     controlVars = random.sample(fids[:targetIndex]+fids[targetIndex+1:], k=random.choice(range(1,4)))
-    print('controlVars', controlVars)
+    #print('controlVars', controlVars)
     
     controlVarsIndices = []
     newfids = fids[:targetIndex]+fids[targetIndex+1:]
@@ -545,64 +583,102 @@ def controlStrategiesRandom(forecasts, models, fids):
     cs['base']['X'].insert(targetIndex, cs['base']['y'])
     cs['opt']['X'].insert(targetIndex, cs['opt']['y'])
     
-    print(controlVars)
+    #print('controls',controlVars)
     result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, 'fidsList': fids, **cs}
     return result
 
-def analysis(fis, forecasts, fids, controlStrategies=None):
+def analysis(fis, forecasts, fids, mapping, controlStrategies=None):
     
     anomalyIndices = []
     forecasts = forecasts['forecast']
     for ind, forecast in enumerate(forecasts):
         #print('forecast',forecast)
-        if random.random() > 0.5: #forecast['isAnomaly']
+        if forecast['anomalyRate'] > 0.1:
+            #print(forecast['anomalyRate'])
             anomalyIndices.append(ind)
     
     anomalyFids = [fids[ind] for ind in anomalyIndices]
     
-    summary = []
+    anomalySentences = []
     if anomalyFids:
-        for ind, anomalyFid in enumerate(anomalyFids):
-            sentence = '指标' + str(anomalyFid) + '出现异常：当前值' + str(np.round(forecasts[ind]['yNow'],2)) + '不在正常范围内' + ' (' + str(np.round(forecasts[ind]['lowNow'],2)) + '~' + str(np.round(forecasts[ind]['highNow'],2))  + ') '
-            summary.append(sentence)
+        for ind in anomalyIndices:
+            anomalyFid = fids[ind]
+            #print(len(forecasts[ind]['anomalies']))
+            #print(forecasts[ind]['anomalyRate'])
+            sentence = '异常情况严重性 ' + str(round(forecasts[ind]['anomalyRate']*100,2)) + '% : ' '指标' + str(anomalyFid) + '最近时间内的值 (' + str(np.round(forecasts[ind]['anomalies'][-1][1],2)) + ') 不在预期安全范围内' + ' (' + str(np.round(forecasts[ind]['lowNow'],2)) + '~' + str(np.round(forecasts[ind]['highNow'],2))  + ') '
+            anomalySentences.append(sentence)
+     
+    result = {}
+    result['summary'] = []
+    if not anomalySentences:
+        result['summary'].append('无异常情况')
+        result['anomalies'] = anomalySentences
+    else:
         
-    if not summary:
-        summary.append('无异常')
+        ars = [forecasts[ind]['anomalyRate'] for ind in anomalyIndices]
+        seriousness = round(np.median(ars)*100, 2)
+        result['summary'].append('发现' + str(len(anomalySentences)) + '项指标出现异常，总体严重性 ' + str(seriousness) + '%')
+        result['anomalies'] = anomalySentences
     
-    return summary
+    return result
 
-def generateJson2(request=None, outputFilename=None, plot=False):
+def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     if request:
         requestJs()
-    X, fids, mapping, controlDecision = loadData()
-    I = [i for i,x in enumerate(X) if  len(x) > 300] # if 2 < len(x) < 300
+        
+    if fake:
+        data = readData()
+        X, fids, mapping, controlDecision = loadData()
+        
+        fids = random.sample(fids, len(data))
+        #print(fids)
+        X = data
+        
+    else:
+        X, fids, mapping, controlDecision = loadData()
+    
+        X = X[:30]
+        fids = fids[:30]
+        
+
+        
+    I = [i for i,x in enumerate(X) if  len(x)] # if 2 < len(x) < 300
     ind = random.choice(I)
     # with open(path / 'data' / 'fake-data' / 'randTimeSeries.json', 'r') as f:
     #     X = json.loads(f.read())
     # ind = random.choice(range(len(X)))
     
-    trX = knnRegress(X, n_points=10)
+    trX = knnRegress(X, n_points=30)
     
-    forecasts = forecast2(trX, fids=fids, S=0.5, L=0.5)
+    forecasts = forecast2(trX, data=X, fids=fids, S=0.5, L=0.5)
     
-    forecast = forecasts['forecast'][ind]
-    resY = forecast['pred']
-    high = forecast['high']
-    low = forecast['low']
-    
-    if plot:
-        plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=20, alpha=0.5, c='green')
-        #plt.scatter(Ts, trX[:,ind], s=50, c='yellow')
-        plt.scatter([r[0] for r in resY], [r[1] for r in resY] , s=10, c='black')
-        plt.plot([r[0] for r in resY], [r[1] for r in resY], linewidth=1, c='blue')
-        
-        plt.axvline(trX[0][-1][0])
-        plt.plot([r[0] for r in high], [r[1] for r in high], linewidth=1, c='orange')
-        plt.plot([r[0] for r in low], [r[1] for r in low], linewidth=1, c='red')
-        
-        #plt.plot()
-        plt.show()
-    
+    bar = progBar.Bar('Plotting forecasts...', max=len(I))
+    for ind in I:
+        bar.next()
+        forecast = forecasts['forecast'][ind]
+        resY = forecast['pred']
+        high = forecast['high']
+        low = forecast['low']
+        if plot:
+            plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=5, alpha=0.5, c='green')
+            #plt.scatter(Ts, trX[:,ind], s=50, c='yellow')
+            #plt.scatter([r[0] for r in resY], [r[1] for r in resY] , s=10, c='black')
+            plt.plot([r[0] for r in resY], [r[1] for r in resY], linewidth=1, c='blue')
+            plt.axvline(forecast['tPrev'])
+            plt.axvline(forecast['tNow'])
+            plt.plot([r[0] for r in high], [r[1] for r in high], linewidth=1, c='orange')
+            plt.plot([r[0] for r in low], [r[1] for r in low], linewidth=1, c='red')
+            anomalies = forecast['anomalies']
+            #print(anomalies)
+            plt.scatter([r[0] for r in anomalies], [r[1] for r in anomalies], s=50, c='red')
+            #plt.axhline(forecast['highNow'])
+            #plt.axhline(forecast['lowNow'])
+            #plt.plot()
+            #plt.show()
+            pic = fids[ind] + '.png'
+            plt.savefig(path / 'assets' / pic)
+            plt.close()
+    bar.finish()
     #coef = C[ind]
     #intercept = I[ind]
     #print('coefs', coef)
@@ -615,21 +691,23 @@ def generateJson2(request=None, outputFilename=None, plot=False):
     models, fis = featureImportances2(trX)
     controlStrategy = controlStrategiesRandom(forecasts, models, fids)
     #print(forecasts)
-    sentences = analysis(fis, forecasts, fids)
+    analyses = analysis(fis, forecasts, fids, mapping)
     #print(sentences)
-    jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategy, 'summary': sentences}
+    print(analyses['summary'])
+    jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategy, 'analysis': analyses}
     if not outputFilename:
         outputFilename = 'output.json'
     with open(path / 'data' / 'fake-data' / outputFilename, 'w') as f:
         f.write(json.dumps(jsdict))
     print('JSON done.')
+    return jsdict
 
 if __name__ == '__main__':
 
     ######################################
     t1 = time.time()
 
-    generateJson2()
+    result = generateJson2(plot=True, fake=True)
     
     t2 = time.time()
     print('time taken', t2-t1)

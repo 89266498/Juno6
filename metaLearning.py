@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import warnings
 warnings.filterwarnings('ignore') 
-
+import platform
 from pathlib import Path
 import random
 import numpy as np
@@ -10,6 +10,7 @@ import os, sys
 import time
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as mfm
 from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV, LassoCV
 from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
@@ -20,9 +21,19 @@ import pickle
 import requests
 import progress.bar as progBar
 #from progress.bar import IncrementalBar
+import base64
 
 path = Path('./')
+if platform.system() == 'Windows':
+    font = '微软雅黑'
+else:
+    font = 'Noto Sans CJK JP',
 
+plt.rcParams.update({'font.family': font})
+#font_path = "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
+#prop = mfm.FontProperties(fname=font_path)
+# plt.text(0.5, 0.5, s=u'测试', fontproperties=prop)
+# plt.show()
 if not os.path.isdir(path / 'data'):
     os.mkdir(path / 'data')
 
@@ -425,7 +436,7 @@ def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1):
     return result
     
 
-def featureImportances2(trX):
+def featureImportances2(trX, fids, threshold=0.1):
     
     #print()
     
@@ -437,41 +448,47 @@ def featureImportances2(trX):
     M = trX.T
     #bar = IncrementalBar('Countdown', max = len(M))
     #print(bar)
-    with progBar.Bar("Analyzing Feature Importances...", max=len(M)) as bar:
-        for i, trx in enumerate(M):
-            #print('\r',i, '/', len(M)) if i % 100 == 0 else None
-            bar.next()
-            trainX = [[v for v in r] for r in trX.T]
-            trainX = trainX[:i] + trainX[i+1:]
-            trainX = np.array(trainX).T
-            
-            #print(np.std(trainX))
-            regr = RandomForestRegressor(n_estimators=10, max_features='sqrt').fit(trainX, trX[:,i])
-            fi = list(regr.feature_importances_)
-            
-            # regr = BayesianRidge(normalize=True, fit_intercept=True).fit(trainX, trX[:,i])
-            # #trainX[:,i] = vec
-            # coefs = regr.coef_
-            # fi = list(np.abs(coefs)/np.sum(np.abs(coefs)))
-            
-            
-            fi.insert(i,-1)
-            models.append(regr)
-            fis.append(fi)
+    bar = progBar.Bar("Analyzing Feature Importances...", max=len(M))
+    for i, trx in enumerate(M):
+        #print('\r',i, '/', len(M)) if i % 100 == 0 else None
+        bar.next()
+        trainX = [[v for v in r] for r in trX.T]
+        trainX = trainX[:i] + trainX[i+1:]
+        trainX = np.array(trainX).T
         
+        #print(np.std(trainX))
+        regr = RandomForestRegressor(n_estimators=10, max_features='sqrt').fit(trainX, trX[:,i])
+        fi = list(regr.feature_importances_)
+        
+        # regr = BayesianRidge(normalize=True, fit_intercept=True).fit(trainX, trX[:,i])
+        # #trainX[:,i] = vec
+        # coefs = regr.coef_
+        # fi = list(np.abs(coefs)/np.sum(np.abs(coefs)))
+        
+        
+        fi.insert(i,-1)
+        models.append(regr)
+        fis.append(fi)
+    bar.finish()    
     
-    print('completed')
+    #print('completed')
         #fis.append(fi)
     #fis = np.array(fis)
-    return models, fis
+    
+    #formatting to dict with fids as keys
+    sums = [round(sum(fi), 2) for fi in fis]
+    #print(sums)
+    d = {fid1: {fid2: fis[i][j] for j, fid2 in enumerate(fids) if fis[i][j] >= threshold} for i, fid1 in enumerate(fids)}
+    
+    return models, d
 
-def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterations=5):
+def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterations=10):
     
     if not control:
         print('No control variables defined, nothing to control...')
         return None, None
     elif control == [-1]:
-        control = list(range(len(X)))
+        control = list(range(len(forecasts)))
     
     print('Figuring out feasible region for output variable...')
     ydict = forecasts['forecast'][yInd]
@@ -531,12 +548,14 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterati
         variance *= dx*10*(iteration+1)
         #print('variance', variance)
         if tolerance < 0.0001:
+            print()
             print('Best solution found by convergence...')
             break
     bar.finish()
     #print('control', control)
     tlast = tmax
     xlast = [x['yNow'] for x in Xdict]
+    xlast = [v for i, v in enumerate(xlast) if i in control]
     ylast = ydict['yNow']
     #print('tlast', tlast)
     #print('Xlast', xlast)
@@ -544,12 +563,14 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterati
     #print('\n')
     
     ybase = np.clip(model.predict([xbase])[0],0, np.inf)
+    xbase = [v for i, v in enumerate(xbase) if i in control]
     #print('tbase', tpred)
     #print('xbase', xbase)
     #print('ybase', ybase)
     #print('\n')
     
     topt = tpred
+    xopt = [v for i, v in enumerate(xopt) if i in control]
     #print('topt', tpred)
     #print('xopt', xopt)
     #print('yopt', yopt)
@@ -584,41 +605,119 @@ def controlStrategiesRandom(forecasts, models, fids):
     cs['opt']['X'].insert(targetIndex, cs['opt']['y'])
     
     #print('controls',controlVars)
-    result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, 'fidsList': fids, **cs}
+    result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, **cs}
     return result
 
-def analysis(fis, forecasts, fids, mapping, controlStrategies=None):
+def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
     
     anomalyIndices = []
     forecasts = forecasts['forecast']
     for ind, forecast in enumerate(forecasts):
         #print('forecast',forecast)
-        if forecast['anomalyRate'] > 0.1:
+        if forecast['anomalyRate'] > 0.05:
             #print(forecast['anomalyRate'])
             anomalyIndices.append(ind)
     
     anomalyFids = [fids[ind] for ind in anomalyIndices]
     
-    anomalySentences = []
+    anomalyDicts = []
     if anomalyFids:
         for ind in anomalyIndices:
             anomalyFid = fids[ind]
             #print(len(forecasts[ind]['anomalies']))
             #print(forecasts[ind]['anomalyRate'])
-            sentence = '异常情况严重性 ' + str(round(forecasts[ind]['anomalyRate']*100,2)) + '% : ' '指标' + str(anomalyFid) + '最近时间内的值 (' + str(np.round(forecasts[ind]['anomalies'][-1][1],2)) + ') 不在预期安全范围内' + ' (' + str(np.round(forecasts[ind]['lowNow'],2)) + '~' + str(np.round(forecasts[ind]['highNow'],2))  + ') '
-            anomalySentences.append(sentence)
+            
+            seriousness = round(forecasts[ind]['anomalyRate']*100,2)
+            uppNow = np.round(forecasts[ind]['highNow'],2)
+            lowNow = np.round(forecasts[ind]['lowNow'],2)
+            valNow = np.round(forecasts[ind]['anomalies'][-1][1],2)
+            description = '异常情况严重性 ' + str(round(forecasts[ind]['anomalyRate']*100,2)) + '% : ' '指标' + str(anomalyFid) + '最近时间内的值 (' + str(np.round(forecasts[ind]['anomalies'][-1][1],2)) + ') 不在预期安全范围内' + ' (' + str(np.round(forecasts[ind]['lowNow'],2)) + '~' + str(np.round(forecasts[ind]['highNow'],2))  + ') '
+            #anomalyDicts.append(description)
+            
+            fi = fis[anomalyFid]
+            sfi = sorted(fi.items(), key=lambda d: d[1], reverse=True)
+            
+            causes = [fi for fi in sfi if fi[0] in anomalyFids]
+            #print(causes)
+            statements = []
+            for f in sfi:
+                state = '异常' if f in causes else '正常'
+                statement = '(' + f[0] + ',' + str(round(f[1], 2)) + ',' + state + ')'
+                statements.append(statement)
+            
+            if statements:
+                reasons = ['该异常指标的影响因子（按概率来排序）为：' +  ('，').join(statements)]
+                if not causes:
+                    reasons.append(['可能原因：设备故障'])
+                else:
+                    causeFids = [r[0] for r in causes]
+                    reasons.append(['可能原因：' + ('，').join(causeFids) ])
+            
+            else:
+                reasons = ['可能原因：未知']
+            pics = []
+            if len(causes) >= 1:
+                #print('triggered')
+                arr = [r[1] for r in causes] + [1 - sum([r[1] for r in causes])]
+                causeFids.append('其它')
+
+                plt.style.use('dark_background')
+                #plt.text(fontproperties=prop)
+                plt.pie(x=arr, labels=causeFids, autopct='%1.1f%%')
+                
+                plt.legend(title='因素',
+                            loc="center left",
+                           bbox_to_anchor=(1, 0, 0.5, 1))
+                plt.title(anomalyFid + '的重要影响因子')
+                #plt.show()
+                plt.savefig(path / 'plot.jpg')
+                plt.close()
+                with open(path / 'plot.jpg', 'rb') as f:
+                    base64Data = base64.b64encode(f.read())
+                #print(base64Data)
+                ab64 = str(base64Data)
+                pics.append(ab64)
+                ###################################
+                forecast = forecasts[ind]
+                resY = forecast['pred']
+                high = forecast['high']
+                low = forecast['low']
+                plt.style.use('dark_background')
+                plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=5, alpha=0.5, c='green')
+                #plt.scatter(Ts, trX[:,ind], s=50, c='yellow')
+                #plt.scatter([r[0] for r in resY], [r[1] for r in resY] , s=10, c='black')
+                plt.plot([r[0] for r in resY], [r[1] for r in resY], linewidth=1, c='blue')
+                plt.axvline(forecast['tPrev'])
+                plt.axvline(forecast['tNow'])
+                plt.plot([r[0] for r in high], [r[1] for r in high], linewidth=1, c='orange')
+                plt.plot([r[0] for r in low], [r[1] for r in low], linewidth=1, c='red')
+                anomalies = forecast['anomalies']
+                #print(anomalies)
+                plt.scatter([r[0] for r in anomalies], [r[1] for r in anomalies], s=50, c='red')
+                plt.title(anomalyFid + '的趋势预测和异常点')
+                #plt.show()
+                plt.savefig(path / 'plot.jpg')
+                plt.close()
+                with open(path / 'plot.jpg', 'rb') as f:
+                    base64Data = base64.b64encode(f.read())
+                #print(base64Data)
+                fb64 = str(base64Data)
+                pics.append(fb64)
+                
+            d = {'fid': anomalyFid, 'seriousness': seriousness, 'valNow': valNow, 'lowNow': lowNow, 'uppNow': uppNow, 'description': description, 'causes': sfi, 'reasons': reasons, 'pics': pics}
+            anomalyDicts.append(d)
      
     result = {}
     result['summary'] = []
-    if not anomalySentences:
+    if not anomalyDicts:
         result['summary'].append('无异常情况')
-        result['anomalies'] = anomalySentences
+        result['anomalies'] = anomalyDicts
     else:
         
         ars = [forecasts[ind]['anomalyRate'] for ind in anomalyIndices]
         seriousness = round(np.median(ars)*100, 2)
-        result['summary'].append('发现' + str(len(anomalySentences)) + '项指标出现异常，总体严重性 ' + str(seriousness) + '%')
-        result['anomalies'] = anomalySentences
+        result['summary'].append('发现' + str(len(anomalyDicts)) + '项指标出现异常，总体严重性 ' + str(seriousness) + '%')
+        result['anomalies'] = anomalyDicts
     
     return result
 
@@ -637,8 +736,8 @@ def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     else:
         X, fids, mapping, controlDecision = loadData()
     
-        X = X[:30]
-        fids = fids[:30]
+        X = X
+        fids = fids
         
 
         
@@ -688,10 +787,10 @@ def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     #plt.scatter(range(len(coef)), coef, s=20, alpha=0.8)
     #plt.axhline()
     #plt.show()
-    models, fis = featureImportances2(trX)
+    models, fis = featureImportances2(trX, fids)
     controlStrategy = controlStrategiesRandom(forecasts, models, fids)
     #print(forecasts)
-    analyses = analysis(fis, forecasts, fids, mapping)
+    analyses = analysis(X, fis, forecasts, fids, mapping)
     #print(sentences)
     print(analyses['summary'])
     jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategy, 'analysis': analyses}
@@ -707,7 +806,7 @@ if __name__ == '__main__':
     ######################################
     t1 = time.time()
 
-    result = generateJson2(plot=True, fake=True)
+    result = generateJson2(plot=False, fake=False)
     
     t2 = time.time()
     print('time taken', t2-t1)

@@ -438,7 +438,7 @@ def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1):
     return result
     
 
-def featureImportances2(trX, fids, threshold=0.1):
+def featureImportances2(trX, fids, threshold=0.01):
     
     #print()
     
@@ -641,8 +641,8 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
             fi = fis[anomalyFid]
             sfi = sorted(fi.items(), key=lambda d: d[1], reverse=True)
             
-            #causes = [fi for fi in sfi if fi[0] in anomalyFids]
-            causes = sfi[:5]
+            causes = [fi for fi in sfi if fi[0] in anomalyFids]
+            #causes = sfi[:5]
             #print(causes)
             statements = []
             for f in sfi:
@@ -656,34 +656,37 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
                     reasons.append(['可能原因：设备故障'])
                 else:
                     causeFids = [r[0] for r in causes]
-                    reasons.append(['可能原因：' + ('，').join(causeFids) ])
+                    reasons.append(['可能原因：由' + ('，').join(causeFids) + '出现异常所导致'])
             
             else:
                 reasons = ['可能原因：未知']
             pics = []
-            if len(causes) >= 1:
-                #print('triggered')
-                arr = [r[1] for r in causes] + [1 - sum([r[1] for r in causes])]
-                causeFids.append('其它')
-                plt.figure(figsize=(16,9), dpi=300)
-                plt.style.use('dark_background')
-                #plt.text(fontproperties=prop)
-                plt.pie(x=arr, labels=causeFids, autopct='%1.1f%%')
-                
-                leg = plt.legend(prop=ch_font) #bbox_to_anchor=(1, 0, 0.5, 1)
-                #plt.legend.set_title('因素',prop=ch_font)
-                leg.set_title('因素',prop=ch_font)
-                plt.title(anomalyFid + '的重要影响因子', fontproperties=ch_font)
-                #plt.figure(figsize=(16,9))
-                #plt.show()
-                picname = str(anomalyFid) + '-pie.jpg'
-                plt.savefig(path / 'assets' / picname,dpi=100)
-                plt.close()
-                with open(path / 'assets' / picname, 'rb') as f:
-                    base64Data = base64.b64encode(f.read())
-                #print(base64Data)
-                ab64 = str(base64Data)
-                pics.append(ab64)
+            #if len(causes) >= 1:
+            #print('triggered')
+            arr = [r[1] for r in sfi[:10]] + [1 - sum([r[1] for r in sfi[:10]])]
+            causeFids.append('其它因素')
+            labels = [r[0] for r in sfi[:10]] + ['其它因素']
+            plt.figure(figsize=(16,9), dpi=300)
+            plt.style.use('dark_background')
+            #plt.text(fontproperties=prop)
+            patches, texts, autotexts = plt.pie(x=arr, labels=labels, autopct='%1.1f%%')
+            plt.setp(autotexts, fontproperties=ch_font)
+            plt.setp(texts, fontproperties=ch_font)
+            leg = plt.legend(prop=ch_font) #bbox_to_anchor=(1, 0, 0.5, 1)
+            
+            leg.set_title('因素',prop=ch_font)
+            plt.title(anomalyFid + '的重要影响因子', fontproperties=ch_font)
+            
+            #plt.figure(figsize=(16,9))
+            #plt.show()
+            picname = str(anomalyFid) + '-pie.jpg'
+            plt.savefig(path / 'assets' / picname,dpi=100)
+            plt.close()
+            with open(path / 'assets' / picname, 'rb') as f:
+                base64Data = base64.b64encode(f.read())
+            #print(base64Data)
+            ab64 = str(base64Data)
+            pics.append(ab64)
             ###################################
             forecast = forecasts[ind]
             resY = forecast['pred']

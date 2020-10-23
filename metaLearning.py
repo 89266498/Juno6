@@ -27,9 +27,11 @@ path = Path('./')
 if platform.system() == 'Windows':
     font = '微软雅黑'
 else:
-    font = 'Noto Sans CJK JP',
-
-plt.rcParams.update({'font.family': font})
+    font = 'WenQuanYi Zen Hei' #'Source Han Sans CN'
+#plt.rc('font', family=font)
+ch_font = mfm.FontProperties(fname="/usr/share/fonts/truetype/SourceHanSansCN/SourceHanSansCN-Regular.ttf")
+#plt.rcParams.update({'font.family': font})
+#plt.rcParams['font.family'] = ['Source Han Sans CN']
 #font_path = "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
 #prop = mfm.FontProperties(fname=font_path)
 # plt.text(0.5, 0.5, s=u'测试', fontproperties=prop)
@@ -614,7 +616,7 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
     forecasts = forecasts['forecast']
     for ind, forecast in enumerate(forecasts):
         #print('forecast',forecast)
-        if forecast['anomalyRate'] > 0.05:
+        if forecast['anomalyRate'] > 0.1 and len(forecast['anomalies']) > 3:
             #print(forecast['anomalyRate'])
             anomalyIndices.append(ind)
     
@@ -622,7 +624,9 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
     
     anomalyDicts = []
     if anomalyFids:
+        bar = progBar.Bar('Analyzing anomalies...', max=len(anomalyFids))
         for ind in anomalyIndices:
+            bar.next()
             anomalyFid = fids[ind]
             #print(len(forecasts[ind]['anomalies']))
             #print(forecasts[ind]['anomalyRate'])
@@ -637,7 +641,8 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
             fi = fis[anomalyFid]
             sfi = sorted(fi.items(), key=lambda d: d[1], reverse=True)
             
-            causes = [fi for fi in sfi if fi[0] in anomalyFids]
+            #causes = [fi for fi in sfi if fi[0] in anomalyFids]
+            causes = sfi[:5]
             #print(causes)
             statements = []
             for f in sfi:
@@ -660,53 +665,60 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
                 #print('triggered')
                 arr = [r[1] for r in causes] + [1 - sum([r[1] for r in causes])]
                 causeFids.append('其它')
-
+                plt.figure(figsize=(16,9), dpi=300)
                 plt.style.use('dark_background')
                 #plt.text(fontproperties=prop)
                 plt.pie(x=arr, labels=causeFids, autopct='%1.1f%%')
                 
-                plt.legend(title='因素',
-                            loc="center left",
-                           bbox_to_anchor=(1, 0, 0.5, 1))
-                plt.title(anomalyFid + '的重要影响因子')
+                leg = plt.legend(prop=ch_font) #bbox_to_anchor=(1, 0, 0.5, 1)
+                #plt.legend.set_title('因素',prop=ch_font)
+                leg.set_title('因素',prop=ch_font)
+                plt.title(anomalyFid + '的重要影响因子', fontproperties=ch_font)
+                #plt.figure(figsize=(16,9))
                 #plt.show()
-                plt.savefig(path / 'plot.jpg')
+                picname = str(anomalyFid) + '-pie.jpg'
+                plt.savefig(path / 'assets' / picname,dpi=100)
                 plt.close()
-                with open(path / 'plot.jpg', 'rb') as f:
+                with open(path / 'assets' / picname, 'rb') as f:
                     base64Data = base64.b64encode(f.read())
                 #print(base64Data)
                 ab64 = str(base64Data)
                 pics.append(ab64)
-                ###################################
-                forecast = forecasts[ind]
-                resY = forecast['pred']
-                high = forecast['high']
-                low = forecast['low']
-                plt.style.use('dark_background')
-                plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=5, alpha=0.5, c='green')
-                #plt.scatter(Ts, trX[:,ind], s=50, c='yellow')
-                #plt.scatter([r[0] for r in resY], [r[1] for r in resY] , s=10, c='black')
-                plt.plot([r[0] for r in resY], [r[1] for r in resY], linewidth=1, c='blue')
-                plt.axvline(forecast['tPrev'])
-                plt.axvline(forecast['tNow'])
-                plt.plot([r[0] for r in high], [r[1] for r in high], linewidth=1, c='orange')
-                plt.plot([r[0] for r in low], [r[1] for r in low], linewidth=1, c='red')
-                anomalies = forecast['anomalies']
-                #print(anomalies)
-                plt.scatter([r[0] for r in anomalies], [r[1] for r in anomalies], s=50, c='red')
-                plt.title(anomalyFid + '的趋势预测和异常点')
-                #plt.show()
-                plt.savefig(path / 'plot.jpg')
-                plt.close()
-                with open(path / 'plot.jpg', 'rb') as f:
-                    base64Data = base64.b64encode(f.read())
-                #print(base64Data)
-                fb64 = str(base64Data)
-                pics.append(fb64)
+            ###################################
+            forecast = forecasts[ind]
+            resY = forecast['pred']
+            high = forecast['high']
+            low = forecast['low']
+            plt.figure(figsize=(16,9))
+            plt.style.use('dark_background')
+            plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=10, alpha=0.7, c='green', label='历史数据')
+            #plt.scatter(Ts, trX[:,ind], s=50, c='yellow')
+            #plt.scatter([r[0] for r in resY], [r[1] for r in resY] , s=10, c='black')
+            plt.plot([r[0] for r in resY if r[0] <= forecast['tPrev']], [r[1] for r in resY if r[0] <= forecast['tPrev']], linewidth=1, c='blue', label='机器拟合')
+            plt.plot([r[0] for r in resY if r[0] >= forecast['tPrev']], [r[1] for r in resY if r[0] >= forecast['tPrev']], linewidth=3, c='cornflowerblue', label='趋势预测')
+            plt.axvline(forecast['tPrev'], c='teal')
+            plt.axvline(forecast['tNow'], c='teal')
+            plt.plot([r[0] for r in high], [r[1] for r in high], linewidth=1, c='orange', label='趋势预测99%置信度上限', ls='dashed')
+            plt.plot([r[0] for r in low], [r[1] for r in low], linewidth=1, c='red', label='趋势预测99%置信度下限', ls='dashed')
+            anomalies = forecast['anomalies']
+            #print(anomalies)
+            plt.scatter([r[0] for r in anomalies], [r[1] for r in anomalies], s=20, c='red', label='最近异常点', marker='x')
+            plt.title(anomalyFid + '的趋势预测和异常点', fontproperties=ch_font)
+            plt.legend(loc="center left", prop=ch_font)     #bbox_to_anchor=(1, 0, 0.5, 1)
+            
+            #plt.show()
+            picname = str(anomalyFid) + '-plot.jpg'
+            plt.savefig(path / 'assets' / picname, dpi=100)
+            plt.close()
+            with open(path / 'assets' / picname, 'rb') as f:
+                base64Data = base64.b64encode(f.read())
+            #print(base64Data)
+            fb64 = str(base64Data)
+            pics.append(fb64)
                 
             d = {'fid': anomalyFid, 'seriousness': seriousness, 'valNow': valNow, 'lowNow': lowNow, 'uppNow': uppNow, 'description': description, 'causes': sfi, 'reasons': reasons, 'pics': pics}
             anomalyDicts.append(d)
-     
+    bar.finish() 
     result = {}
     result['summary'] = []
     if not anomalyDicts:
@@ -747,7 +759,7 @@ def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     #     X = json.loads(f.read())
     # ind = random.choice(range(len(X)))
     
-    trX = knnRegress(X, n_points=30)
+    trX = knnRegress(X, n_points=100)
     
     forecasts = forecast2(trX, data=X, fids=fids, S=0.5, L=0.5)
     
@@ -806,7 +818,7 @@ if __name__ == '__main__':
     ######################################
     t1 = time.time()
 
-    result = generateJson2(plot=False, fake=False)
+    result = generateJson2(plot=False, fake=True)
     
     t2 = time.time()
     print('time taken', t2-t1)

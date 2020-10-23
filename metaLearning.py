@@ -417,6 +417,7 @@ def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1):
         dt = data[i]
         tPrev = Ts[-l-a] 
         tNow = Ts[-l]
+        yNow = yout[-l][1]
         highNow = np.max([upps[i][0][1], upps[i][a][1]])*1
         lowNow = np.min([lwrs[i][0][1], lwrs[i][a][1]])*1
         # highNow = np.max([r[1] for r in dt if r[0] <= tPrev])*1.5
@@ -426,11 +427,15 @@ def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1):
         total = len([x for x in dt if (tPrev <= x[0] <= tNow)]) + 1
         anomalyRate = round(len(anomalies)/total,4)
         #print('ar', anomalyRate)
+        k=100
+        yout = [v for j, v in enumerate(yout) if j % int(len(yout)/(k*(a+l)/(1+l))) == 0]
+        upp = [v for j, v in enumerate(upps[i]) if j % int(len(upps[i])/k) == 0]
+        lwr = [v for j, v in enumerate(lwrs[i]) if j % int(len(lwrs[i])/k) == 0]
         
-        ydict = {'pred':yout, 'high': upps[i], 'low': lwrs[i], 'anomalyRate': anomalyRate, 'anomalies': anomalies, 'highNow': highNow, 'lowNow': lowNow, 'yNow': yout[-l][1], 'tPrev': tPrev, 'tNow': tNow }
+        ydict = {'pred':yout, 'high': upp, 'low': lwr, 'anomalyRate': anomalyRate, 'anomalies': anomalies, 'highNow': highNow, 'lowNow': lowNow, 'yNow': yNow, 'tPrev': tPrev, 'tNow': tNow, 'pics': [] }
         ydicts.append(ydict)
     
-    result = {'datetime':time.time(), 'forecast': []}
+    result = {'datetime':time.time(), 'forecast': [], 'summary': []}
     for i, ydict in enumerate(ydicts):
         fid = fids[i]
         result['forecast'].append({'fid': fid, **ydict})
@@ -488,7 +493,7 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterati
     
     if not control:
         print('No control variables defined, nothing to control...')
-        return None, None
+        return None
     elif control == [-1]:
         control = list(range(len(forecasts)))
     
@@ -580,6 +585,8 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterati
     result = {'last':{'t': tlast, 'X':xlast, 'y':ylast},
               'base':{'t':tpred, 'X':list(xbase), 'y':ybase},
               'opt':{'t':tpred, 'X': list(xopt), 'y':yopt}}
+
+    
     #print(result)
     return result
 
@@ -598,16 +605,47 @@ def controlStrategiesRandom(forecasts, models, fids):
     newfids = fids[:targetIndex]+fids[targetIndex+1:]
     for cv in controlVars:
         controlVarsIndices.append(newfids.index(cv))
-    
-    
+    print('cv', controlVars)
+    print('cvi',controlVarsIndices)
     cs = controlStrategy2(targetIndex, forecasts, model, control=controlVarsIndices, maximize=maximization)
     
-    cs['last']['X'].insert(targetIndex, cs['last']['y'])
-    cs['base']['X'].insert(targetIndex, cs['base']['y'])
-    cs['opt']['X'].insert(targetIndex, cs['opt']['y'])
+    # cs['last']['X'].insert(targetIndex, cs['last']['y'])
+    # cs['base']['X'].insert(targetIndex, cs['base']['y'])
+    # cs['opt']['X'].insert(targetIndex, cs['opt']['y'])
+    
+    suggestion = []
+    if not cs:
+        suggestion = ['目前没定义任何调控变量，所以暂无调控策略。']
+    else:
+        statement =  '根据当前情况，算法猜测人类根据以往的经验会倾向于进行这样的调控：'
+        ss = []
+        # print(cs['last']['X'])
+        # print(cs['base']['X'])
+        # print(len(cs['base']['X']))
+        # print('cv', controlVars)
+        for i, v in enumerate(cs['base']['X']):
+            # print(cs['last']['X'][i])
+            # print(cs['base']['X'][i])
+            # print(controlVars[i]  +  ' 从 ' + str(round(cs['last']['X'][i],2)) + ' 调节至 ' + str(round(cs['base']['X'][i],2)) )
+            ss.append( controlVars[i]  +  ' 从 ' + str(round(cs['last']['X'][i],2)) + ' 调节至 ' + str(round(cs['base']['X'][i],2)) )
+            print('ss', ss)
+        statement += ('，').join(ss) + '。'
+        statement += '预计该调控策略将于' + str(time.ctime(cs['base']['t'])) + '使' + fids[targetIndex] +  '调节至' + str(round(cs['base']['y'],2)) + '。'
+        suggestion.append(statement)
+        ############
+        statement += '算法通过深度模型能给出最优的调控策略是：'
+        ss = []
+        for i, v in enumerate(cs['opt']['X']):
+            ss.append( controlVars[i]  +  '从' + str(round(cs['last']['X'][i],2)) + '调节至' + str(round(cs['opt']['X'][i],2)) )
+        statement += ('，').join(ss) + '。'
+        statement += '预计该算法给出的调控策略将于' + str(time.ctime(cs['base']['t'])) + '使' + fids[targetIndex] +  '调节至' + str(round(cs['opt']['y'],2)) + '。'
+        suggestion.append(statement)
+    
+    
+    
     
     #print('controls',controlVars)
-    result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, **cs}
+    result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, **cs, 'suggestion': suggestion, 'pics': []}
     return result
 
 def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
@@ -661,44 +699,45 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
             else:
                 reasons = ['可能原因：未知']
             pics = []
-            #if len(causes) >= 1:
-            #print('triggered')
-            arr = [r[1] for r in sfi[:10]] + [1 - sum([r[1] for r in sfi[:10]])]
-            causeFids.append('其它因素')
-            labels = [r[0] for r in sfi[:10]] + ['其它因素']
-            plt.figure(figsize=(16,9), dpi=300)
-            plt.style.use('dark_background')
-            #plt.text(fontproperties=prop)
-            patches, texts, autotexts = plt.pie(x=arr, labels=labels, autopct='%1.1f%%')
-            plt.setp(autotexts, fontproperties=ch_font)
-            plt.setp(texts, fontproperties=ch_font)
-            leg = plt.legend(prop=ch_font) #bbox_to_anchor=(1, 0, 0.5, 1)
-            
-            leg.set_title('因素',prop=ch_font)
-            plt.title(anomalyFid + '的重要影响因子', fontproperties=ch_font)
-            
-            #plt.figure(figsize=(16,9))
-            #plt.show()
-            picname = str(anomalyFid) + '-pie.jpg'
-            plt.savefig(path / 'assets' / picname,dpi=100)
-            plt.close()
-            with open(path / 'assets' / picname, 'rb') as f:
-                base64Data = base64.b64encode(f.read())
-            #print(base64Data)
-            ab64 = str(base64Data)
-            pics.append(ab64)
+            if len(causes) >= 1:
+                #print('triggered')
+                arr = [r[1] for r in sfi[:10]] + [1 - sum([r[1] for r in sfi[:10]])]
+                causeFids.append('其它因素')
+                labels = [r[0] for r in sfi[:10]] + ['其它因素']
+                plt.figure(figsize=(16,9), dpi=300)
+                plt.style.use('seaborn')
+                #plt.text(fontproperties=prop)
+                patches, texts, autotexts = plt.pie(x=arr, labels=labels, autopct='%1.1f%%')
+                plt.setp(autotexts, fontproperties=ch_font)
+                plt.setp(texts, fontproperties=ch_font)
+                leg = plt.legend(prop=ch_font ,facecolor='white', framealpha=1) #bbox_to_anchor=(1, 0, 0.5, 1)
+                
+                leg.set_title('因素',prop=ch_font)
+                plt.title(anomalyFid + '的重要影响因子', fontproperties=ch_font)
+                
+                #plt.figure(figsize=(16,9))
+                #plt.show()
+                picname = str(anomalyFid) + '-pie.jpg'
+                plt.savefig(path / 'assets' / picname,dpi=100)
+                plt.close()
+                with open(path / 'assets' / picname, 'rb') as f:
+                    base64Data = base64.b64encode(f.read())
+                #print(base64Data)
+                ab64 = str(base64Data)
+                pics.append(ab64)
             ###################################
             forecast = forecasts[ind]
             resY = forecast['pred']
             high = forecast['high']
             low = forecast['low']
             plt.figure(figsize=(16,9))
-            plt.style.use('dark_background')
+            plt.style.use('seaborn')
             plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=10, alpha=0.7, c='green', label='历史数据')
             #plt.scatter(Ts, trX[:,ind], s=50, c='yellow')
             #plt.scatter([r[0] for r in resY], [r[1] for r in resY] , s=10, c='black')
             plt.plot([r[0] for r in resY if r[0] <= forecast['tPrev']], [r[1] for r in resY if r[0] <= forecast['tPrev']], linewidth=1, c='blue', label='机器拟合')
-            plt.plot([r[0] for r in resY if r[0] >= forecast['tPrev']], [r[1] for r in resY if r[0] >= forecast['tPrev']], linewidth=3, c='cornflowerblue', label='趋势预测')
+            t = [r[0] for r in resY if r[0] <= forecast['tPrev']][-1]
+            plt.plot([r[0] for r in resY if r[0] >= t], [r[1] for r in resY if r[0] >= t], linewidth=3, c='cornflowerblue', label='趋势预测')
             plt.axvline(forecast['tPrev'], c='teal')
             plt.axvline(forecast['tNow'], c='teal')
             plt.plot([r[0] for r in high], [r[1] for r in high], linewidth=1, c='orange', label='趋势预测99%置信度上限', ls='dashed')
@@ -707,7 +746,7 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
             #print(anomalies)
             plt.scatter([r[0] for r in anomalies], [r[1] for r in anomalies], s=20, c='red', label='最近异常点', marker='x')
             plt.title(anomalyFid + '的趋势预测和异常点', fontproperties=ch_font)
-            plt.legend(loc="center left", prop=ch_font)     #bbox_to_anchor=(1, 0, 0.5, 1)
+            plt.legend(loc="center left", prop=ch_font,facecolor='white', framealpha=1)
             
             #plt.show()
             picname = str(anomalyFid) + '-plot.jpg'
@@ -762,7 +801,7 @@ def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     #     X = json.loads(f.read())
     # ind = random.choice(range(len(X)))
     
-    trX = knnRegress(X, n_points=100)
+    trX = knnRegress(X, n_points=200)
     
     forecasts = forecast2(trX, data=X, fids=fids, S=0.5, L=0.5)
     

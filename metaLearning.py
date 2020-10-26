@@ -428,9 +428,12 @@ def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1):
         anomalyRate = round(len(anomalies)/total,4)
         #print('ar', anomalyRate)
         k=100
-        yout = [v for j, v in enumerate(yout) if j % int(len(yout)/(k*(a+l)/(1+l))) == 0]
-        upp = [v for j, v in enumerate(upps[i]) if j % int(len(upps[i])/k) == 0]
-        lwr = [v for j, v in enumerate(lwrs[i]) if j % int(len(lwrs[i])/k) == 0]
+        # yout = [v for j, v in enumerate(yout) if j % int(len(yout)/(k*(a+l)/(1+l))) == 0]
+        # upp = [v for j, v in enumerate(upps[i]) if j % int(len(upps[i])/k) == 0]
+        # lwr = [v for j, v in enumerate(lwrs[i]) if j % int(len(lwrs[i])/k) == 0]
+        
+        upp = upps[i]
+        lwr = lwrs[i]
         
         ydict = {'pred':yout, 'high': upp, 'low': lwr, 'anomalyRate': anomalyRate, 'anomalies': anomalies, 'highNow': highNow, 'lowNow': lowNow, 'yNow': yNow, 'tPrev': tPrev, 'tNow': tNow, 'pics': [] }
         ydicts.append(ydict)
@@ -464,7 +467,7 @@ def featureImportances2(trX, fids, threshold=0.01):
         trainX = np.array(trainX).T
         
         #print(np.std(trainX))
-        regr = RandomForestRegressor(n_estimators=10, max_features='sqrt').fit(trainX, trX[:,i])
+        regr = RandomForestRegressor(n_estimators=30, max_features='sqrt').fit(trainX, trX[:,i])
         fi = list(regr.feature_importances_)
         
         # regr = BayesianRidge(normalize=True, fit_intercept=True).fit(trainX, trX[:,i])
@@ -489,7 +492,7 @@ def featureImportances2(trX, fids, threshold=0.01):
     
     return models, d
 
-def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterations=10):
+def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterations=100):
     
     if not control:
         print('No control variables defined, nothing to control...')
@@ -552,7 +555,7 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterati
         yopt = yout[ind]
         xopt = xopt1
         #print('dx', dx)
-        variance *= dx*10*(iteration+1)
+        variance *= dx*100*(iteration+1)
         #print('variance', variance)
         if tolerance < 0.0001:
             print()
@@ -562,7 +565,7 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterati
     #print('control', control)
     tlast = tmax
     xlast = [x['yNow'] for x in Xdict]
-    xlast = [v for i, v in enumerate(xlast) if i in control]
+    xlast = [xlast[i] for i in control]
     ylast = ydict['yNow']
     #print('tlast', tlast)
     #print('Xlast', xlast)
@@ -570,27 +573,57 @@ def controlStrategy2(yInd, forecasts, model, control=[0], maximize=True, iterati
     #print('\n')
     
     ybase = np.clip(model.predict([xbase])[0],0, np.inf)
-    xbase = [v for i, v in enumerate(xbase) if i in control]
+    xbase = [xbase[i] for i in control]
     #print('tbase', tpred)
     #print('xbase', xbase)
     #print('ybase', ybase)
     #print('\n')
     
     topt = tpred
-    xopt = [v for i, v in enumerate(xopt) if i in control]
+    xopt = [xopt[i] for i in control]
     #print('topt', tpred)
     #print('xopt', xopt)
     #print('yopt', yopt)
     
+    # bar = progBar.Bar('Plotting decision surface...', max=len(control))
+    # pltxs = []
+    # pltys = []
+    # for i in control:
+    #     bar.next()
+    #     xl = np.array([x['pred'][-1][1] for x in Xdict])
+    #     resolution = 200
+    #     xm = xl[i]
+    #     #print(xm)
+    #     stepx = xm*0.5/resolution
+    #     pltx = [xm*0.75 + j*stepx for j in range(resolution+1)]
+        
+    #     xin = [list(xl[:i]) + [px] + list(xl[i+1:]) for px in pltx]
+    #     print(xin)
+    #     plty = list(np.clip(model.predict(xin), 0, np.inf))
+    #     #print('plty',plty)
+    #     #plt.plot(pltx, plty, linewidth=1)
+    #     #plt.show()
+    #     pltxs.append(pltx)
+    #     pltys.append(plty)
+    # #print('pltys',pltys)
+    # bar.finish()    
     result = {'last':{'t': tlast, 'X':xlast, 'y':ylast},
               'base':{'t':tpred, 'X':list(xbase), 'y':ybase},
-              'opt':{'t':tpred, 'X': list(xopt), 'y':yopt}}
+              'opt':{'t':tpred, 'X': list(xopt), 'y':yopt}} # 'pltxs': pltxs, 'pltys': pltys
+              
 
     
     #print(result)
     return result
 
-def controlStrategiesRandom(forecasts, models, fids):
+def translate(fid, mapping):
+    string = mapping[fid]['pool_name'] + '·' + mapping[fid]['name'].upper()
+    return string
+
+def unit(fid, mapping):
+    return ' ' + mapping[fid]['unit']
+
+def controlStrategiesRandom(forecasts, models, fids, mapping, style='seaborn'):
     y = random.choice(forecasts['forecast'])
     targetIndex = forecasts['forecast'].index(y)
     maximization = round(random.random())
@@ -598,7 +631,7 @@ def controlStrategiesRandom(forecasts, models, fids):
     
     model = models[targetIndex]
     
-    controlVars = random.sample(fids[:targetIndex]+fids[targetIndex+1:], k=random.choice(range(1,4)))
+    controlVars = random.sample(fids[:targetIndex]+fids[targetIndex+1:], k=random.choice(range(3,7)))
     #print('controlVars', controlVars)
     
     controlVarsIndices = []
@@ -608,7 +641,7 @@ def controlStrategiesRandom(forecasts, models, fids):
     print('cv', controlVars)
     print('cvi',controlVarsIndices)
     cs = controlStrategy2(targetIndex, forecasts, model, control=controlVarsIndices, maximize=maximization)
-    
+    print('mode',mode)
     # cs['last']['X'].insert(targetIndex, cs['last']['y'])
     # cs['base']['X'].insert(targetIndex, cs['base']['y'])
     # cs['opt']['X'].insert(targetIndex, cs['opt']['y'])
@@ -627,28 +660,63 @@ def controlStrategiesRandom(forecasts, models, fids):
             # print(cs['last']['X'][i])
             # print(cs['base']['X'][i])
             # print(controlVars[i]  +  ' 从 ' + str(round(cs['last']['X'][i],2)) + ' 调节至 ' + str(round(cs['base']['X'][i],2)) )
-            ss.append( controlVars[i]  +  ' 从 ' + str(round(cs['last']['X'][i],2)) + ' 调节至 ' + str(round(cs['base']['X'][i],2)) )
-            print('ss', ss)
+            #print(translate(controlVars[i], mapping))
+            #print(unit(controlVars[i], mapping))
+            #print()
+            ss.append( translate(controlVars[i], mapping)  +  ' 从 ' + str(round(cs['last']['X'][i],2)) + unit(controlVars[i], mapping) + ' 调节至 ' + str(round(cs['base']['X'][i],2)) + unit(controlVars[i], mapping) )
+            #print('ssbase', ss)
         statement += ('，').join(ss) + '。'
-        statement += '预计该调控策略将于' + str(time.ctime(cs['base']['t'])) + '使' + fids[targetIndex] +  '调节至' + str(round(cs['base']['y'],2)) + '。'
+        statement += '预计该调控策略将于' + str(time.ctime(cs['base']['t'])) + '使' + translate(fids[targetIndex], mapping) +  '调节至' + str(round(cs['base']['y'],2))+ unit(fids[targetIndex], mapping) + '。'
         suggestion.append(statement)
         ############
         statement += '算法通过深度模型能给出最优的调控策略是：'
         ss = []
+        pics = []
         for i, v in enumerate(cs['opt']['X']):
-            ss.append( controlVars[i]  +  '从' + str(round(cs['last']['X'][i],2)) + '调节至' + str(round(cs['opt']['X'][i],2)) )
+            ss.append( translate(controlVars[i], mapping)  +  '从' + str(round(cs['last']['X'][i],2)) + unit(controlVars[i], mapping) + '调节至' + str(round(cs['opt']['X'][i],2))  + unit(controlVars[i], mapping) )
+            # plt.figure(figsize=(16,9), dpi=300)
+            # plt.style.use(style)
+            # #plt.text(fontproperties=prop)
+            # #patches, texts, autotexts = plt.scatter(x=arr, labels=labels, autopct='%1.1f%%')
+            # # plt.setp(autotexts, fontproperties=ch_font)
+            # # plt.setp(texts, fontproperties=ch_font)
+            # #print(cs['pltxs'])
+            # #print(cs['pltys'])
+            # plt.plot(cs['pltxs'][i], cs['pltys'][i], linewidth=1, label='调控结果')
+            # #plt.scatter(cs['last']['X'][i], cs['last']['y'], s=100, c='red', label='当前状态')
+            # plt.scatter(cs['base']['X'][i], cs['base']['y'], s=100, c='yellow', label='人类调控结果')
+            # plt.scatter(cs['opt']['X'][i], cs['opt']['y'], s=100, c='blue', label='机器调控结果')
+            
+            # leg = plt.legend(prop=ch_font) #bbox_to_anchor=(1, 0, 0.5, 1) ,  ,facecolor='white', framealpha=1 最大化 最小化
+            # md = '最大化 ' + fids[targetIndex] if mode == 'max' else '最小化 ' + fids[targetIndex]
+            # leg.set_title('任务：' + md, prop=ch_font)
+            # plt.title(controlVars[i] + ' 影响 ' + fids[targetIndex] + ' 的调控结果曲线', fontproperties=ch_font)
+            
+            # #plt.figure(figsize=(16,9))
+            # #plt.show()
+            # picname = str(controlVars[i]) + '-csCurve.jpg'
+            # plt.show()
+            # # plt.savefig(path / 'assets' / picname,dpi=100)
+            # # plt.close()
+            # # with open(path / 'assets' / picname, 'rb') as f:
+            # #     base64Data = base64.b64encode(f.read())
+            # # #print(base64Data)
+            # # ab64 = str(base64Data)
+            # # pics.append(ab64)
+            
+            
         statement += ('，').join(ss) + '。'
-        statement += '预计该算法给出的调控策略将于' + str(time.ctime(cs['base']['t'])) + '使' + fids[targetIndex] +  '调节至' + str(round(cs['opt']['y'],2)) + '。'
+        statement += '预计该算法给出的调控策略将于' + time.ctime(cs['opt']['t']) + '使' + translate(fids[targetIndex], mapping) +  '调节至' + str(round(cs['opt']['y'],2)) + unit(fids[targetIndex], mapping) + '。'
         suggestion.append(statement)
     
     
     
-    
+    #print(statement)
     #print('controls',controlVars)
-    result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, **cs, 'suggestion': suggestion, 'pics': []}
+    result = {'datetime': time.time(), 'mode': mode, 'targetFid': fids[targetIndex], 'controls': controlVars, **cs, 'suggestion': suggestion, 'pics': pics}
     return result
 
-def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
+def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None, style='seaborn'):
     
     anomalyIndices = []
     forecasts = forecasts['forecast']
@@ -673,7 +741,7 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
             uppNow = np.round(forecasts[ind]['highNow'],2)
             lowNow = np.round(forecasts[ind]['lowNow'],2)
             valNow = np.round(forecasts[ind]['anomalies'][-1][1],2)
-            description = '异常情况严重性 ' + str(round(forecasts[ind]['anomalyRate']*100,2)) + '% : ' '指标' + str(anomalyFid) + '最近时间内的值 (' + str(np.round(forecasts[ind]['anomalies'][-1][1],2)) + ') 不在预期安全范围内' + ' (' + str(np.round(forecasts[ind]['lowNow'],2)) + '~' + str(np.round(forecasts[ind]['highNow'],2))  + ') '
+            description = '异常情况严重性 ' + str(round(forecasts[ind]['anomalyRate']*100,2)) + '% : ' '指标' + translate(str(anomalyFid), mapping) + '最近时间内的值 (' + str(np.round(forecasts[ind]['anomalies'][-1][1],2)) + unit(str(anomalyFid), mapping) + ') 不在预期安全范围内' + ' (' + str(np.round(forecasts[ind]['lowNow'],2)) + '~' + str(np.round(forecasts[ind]['highNow'],2)) + unit(str(anomalyFid), mapping) + ') '
             #anomalyDicts.append(description)
             
             fi = fis[anomalyFid]
@@ -685,7 +753,7 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
             statements = []
             for f in sfi:
                 state = '异常' if f in causes else '正常'
-                statement = '(' + f[0] + ',' + str(round(f[1], 2)) + ',' + state + ')'
+                statement = '(' + translate(f[0], mapping) + ',' + str(round(f[1], 2)) + ',' + state + ')'
                 statements.append(statement)
             
             if statements:
@@ -694,7 +762,7 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
                     reasons.append(['可能原因：设备故障'])
                 else:
                     causeFids = [r[0] for r in causes]
-                    reasons.append(['可能原因：由' + ('，').join(causeFids) + '出现异常所导致'])
+                    reasons.append('可能原因：由' + ('，').join([translate(causeFid, mapping) for  causeFid in causeFids]) + '出现异常所导致')
             
             else:
                 reasons = ['可能原因：未知']
@@ -703,17 +771,17 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
                 #print('triggered')
                 arr = [r[1] for r in sfi[:10]] + [1 - sum([r[1] for r in sfi[:10]])]
                 causeFids.append('其它因素')
-                labels = [r[0] for r in sfi[:10]] + ['其它因素']
+                labels = [translate(r[0], mapping) for r in sfi[:10]] + ['其它因素']
                 plt.figure(figsize=(16,9), dpi=300)
-                plt.style.use('seaborn')
+                plt.style.use(style)
                 #plt.text(fontproperties=prop)
                 patches, texts, autotexts = plt.pie(x=arr, labels=labels, autopct='%1.1f%%')
                 plt.setp(autotexts, fontproperties=ch_font)
                 plt.setp(texts, fontproperties=ch_font)
-                leg = plt.legend(prop=ch_font ,facecolor='white', framealpha=1) #bbox_to_anchor=(1, 0, 0.5, 1)
+                leg = plt.legend(prop=ch_font) #bbox_to_anchor=(1, 0, 0.5, 1) ,  ,facecolor='white', framealpha=1
                 
                 leg.set_title('因素',prop=ch_font)
-                plt.title(anomalyFid + '的重要影响因子', fontproperties=ch_font)
+                plt.title(translate(anomalyFid, mapping) + ' 的重要影响因子', fontproperties=ch_font)
                 
                 #plt.figure(figsize=(16,9))
                 #plt.show()
@@ -731,7 +799,7 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
             high = forecast['high']
             low = forecast['low']
             plt.figure(figsize=(16,9))
-            plt.style.use('seaborn')
+            plt.style.use(style)
             plt.scatter([r[0] for r in X[ind]], [r[1] for r in X[ind]], s=10, alpha=0.7, c='green', label='历史数据')
             #plt.scatter(Ts, trX[:,ind], s=50, c='yellow')
             #plt.scatter([r[0] for r in resY], [r[1] for r in resY] , s=10, c='black')
@@ -745,8 +813,8 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None):
             anomalies = forecast['anomalies']
             #print(anomalies)
             plt.scatter([r[0] for r in anomalies], [r[1] for r in anomalies], s=20, c='red', label='最近异常点', marker='x')
-            plt.title(anomalyFid + '的趋势预测和异常点', fontproperties=ch_font)
-            plt.legend(loc="center left", prop=ch_font,facecolor='white', framealpha=1)
+            plt.title(translate(anomalyFid, mapping) + ' 的趋势预测和异常点', fontproperties=ch_font)
+            plt.legend(loc="center left", prop=ch_font) #,facecolor='white', framealpha=1
             
             #plt.show()
             picname = str(anomalyFid) + '-plot.jpg'
@@ -842,9 +910,9 @@ def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     #plt.axhline()
     #plt.show()
     models, fis = featureImportances2(trX, fids)
-    controlStrategy = controlStrategiesRandom(forecasts, models, fids)
+    controlStrategy = controlStrategiesRandom(forecasts, models, fids, mapping, style='dark_background')
     #print(forecasts)
-    analyses = analysis(X, fis, forecasts, fids, mapping)
+    analyses = analysis(X, fis, forecasts, fids, mapping, style='dark_background')
     #print(sentences)
     print(analyses['summary'])
     jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategy, 'analysis': analyses}
@@ -853,6 +921,9 @@ def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     with open(path / 'data' / 'fake-data' / outputFilename, 'w') as f:
         f.write(json.dumps(jsdict))
     print('JSON done.')
+    #print("Sending POST requests...")
+    #r = requests.post('http://192.168.101.21:18888/adapter/upload', data=json.dumps(jsdict))
+    #print(r.status_code, r.reason)
     return jsdict
 
 if __name__ == '__main__':
@@ -861,6 +932,16 @@ if __name__ == '__main__':
     t1 = time.time()
 
     result = generateJson2(plot=False, fake=True)
+    
+    print(result['analysis']['summary'])
+    
+    for  d in result['analysis']['anomalies']:
+        print(d['description'], '\n') 
+        print(d['reasons'], '\n')
+    
+    print([result['controlStrategies']['suggestion']])
+    
+    
     
     t2 = time.time()
     print('time taken', t2-t1)

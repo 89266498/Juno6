@@ -323,7 +323,7 @@ def knnRegress(X, n_points=30):
     #print(resX[0])
     return resX
 
-def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1):
+def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1, absolute=True):
     #print("Forecasting...")
     
     Ts = np.array([r[0] for r in trX[0]])
@@ -386,11 +386,17 @@ def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1):
             #print(std)
             #Y = np.append(Y, fcY[0])
             fcX =  np.append(fcX, fcY[0])
-            upp.append(list(np.clip(fcY[0] + 3*std, 0, np.inf))[0])
-            lwr.append(list(np.clip(fcY[0] - 3*std, 0, np.inf))[0])
+            if absolute:
+                upp.append(list(np.clip(fcY[0] + 3*std, 0, np.inf))[0])
+                lwr.append(list(np.clip(fcY[0] - 3*std, 0, np.inf))[0])
+                resY.append(np.clip(fcY[0], 0 , np.inf))
+            else:
+                upp.append(list(fcY[0] + 3*std)[0])
+                lwr.append(list(fcY[0] - 3*std)[0])
+                resY.append(fcY[0])
             fcX = fcX[-s:]
             #trX = trX.T
-            resY.append(np.clip(fcY[0], 0 , np.inf))
+            
 
         resYs.append(resY)
         upps.append(upp)
@@ -921,9 +927,11 @@ def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     with open(path / 'data' / 'fake-data' / outputFilename, 'w') as f:
         f.write(json.dumps(jsdict))
     print('JSON done.')
-    #print("Sending POST requests...")
-    #r = requests.post('http://192.168.101.21:18888/adapter/upload', data=json.dumps(jsdict))
-    #print(r.status_code, r.reason)
+    print("Sending POST requests...")
+    with open(path / 'data' / 'fake-data' / outputFilename, 'r') as f:
+        jsdict = json.loads(f.read())
+    r = requests.post('http://192.168.101.21:18888/adapter/upload', data=json.dumps(jsdict))
+    print(r.status_code, r.reason)
     return jsdict
 
 if __name__ == '__main__':

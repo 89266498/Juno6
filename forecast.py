@@ -71,7 +71,7 @@ def forecast2(trX, data, S=0.5, L=0.5, A=0.1, absolute=True, plot=True, style='d
         trainY = np.array([trX[s+i,ind] for i in range(len(trX)-s)])
         # print(np.shape(trainX))
         #print(np.shape(trainY))
-        regr = BayesianRidge(normalize=False, fit_intercept=False).fit(trainX, trainY)  #RidgeCV(normalize=True, alphas=[1e-7,1e-6,1e-5,1e-4,1e-3, 1e-2, 1e-1, 1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7]), LassoCV(normalize=True, fit_intercept=False, alphas=10**np.array(list(range(2,8))))
+        regr = BayesianRidge(normalize=False, fit_intercept=True).fit(trainX, trainY)  #RidgeCV(normalize=True, alphas=[1e-7,1e-6,1e-5,1e-4,1e-3, 1e-2, 1e-1, 1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7]), LassoCV(normalize=True, fit_intercept=False, alphas=10**np.array(list(range(2,8))))
 
         coefs = regr.coef_
 
@@ -177,8 +177,8 @@ def forecast2(trX, data, S=0.5, L=0.5, A=0.1, absolute=True, plot=True, style='d
             plt.axvline(tPrev, c='teal')
             plt.axvline(tNow, c='teal')
             plt.axvline(Ts[int(len(Ts)*train)], c='teal')
-            plt.plot([r[0] for r in upps], [r[1] for r in upps], linewidth=1, c='orange', label='99% Confidence Interval Upper Bound', ls='dashed')
-            plt.plot([r[0] for r in lwrs], [r[1] for r in lwrs], linewidth=1, c='red', label='99% Confidence Interval Lower Bound', ls='dashed')
+            #plt.plot([r[0] for r in upps], [r[1] for r in upps], linewidth=1, c='orange', label='99% Confidence Interval Upper Bound', ls='dashed')
+            #plt.plot([r[0] for r in lwrs], [r[1] for r in lwrs], linewidth=1, c='red', label='99% Confidence Interval Lower Bound', ls='dashed')
             
             #print(anomalies)
             plt.scatter([r[0] for r in anomalies], [r[1] for r in anomalies], s=20, c='red', label='Recent Anomalies', marker='x')
@@ -196,7 +196,7 @@ def forecast2(trX, data, S=0.5, L=0.5, A=0.1, absolute=True, plot=True, style='d
     
     return ydicts
 
-def predict(X, n_points=1000, **kwargs):
+def predict(X, n_points=100, **kwargs):
     trX = knnRegress(X, n_points=n_points)
     result = forecast2(trX, data=X, **kwargs)
     return result
@@ -207,13 +207,32 @@ if __name__ == '__main__':
     with open(path / 'price.txt', 'r') as f:
         prices = [float(d.strip().split('\t')[-1].replace(',','')) for d in f.readlines()[1:] if d.strip()]
     prices.reverse()
-    data = [list(zip(range(len(prices)), prices))]
-    for i in range(3,30):
-        result = predict(data, S=0.6, A=0.1, L=0.2, train=i/30)
+    
+    regr = BayesianRidge(normalize=True, fit_intercept=True).fit(np.array(range(len(prices))).reshape(-1,1), np.array(prices).reshape(-1,1))
+    p = lambda x: regr.predict(x, return_std=True)
+    
+    pred, std = p(np.array(range(len(prices))).reshape(-1,1))
+    
+    plt.plot(prices)
+    plt.plot(pred)
+    plt.plot(pred+2*std, c='orange', linewidth=1)
+    plt.plot(pred-2*std, c='red', linewidth=1)
+    #plt.show()
+    
+    upp = pred + 2*std
+    lwr = pred - 2*std
+    print(pred)
+    y = np.multiply(1*std, np.tanh(np.divide((prices - pred),1*std))) + pred
+    #y = prices
+    #y = np.clip(pred, upp, lwr)
+    plt.plot(y, c='cornflowerblue', linewidth=1)
+    plt.show()
+    data = [list(zip(range(len(y)), y))]
+    result = predict(data, S=0.4, A=0.2, L=10, train=8/10)
         
         
     
     
     
     
-    
+   # https://wylu.me/posts/eed37a90/

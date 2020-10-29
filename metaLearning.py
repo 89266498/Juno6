@@ -849,7 +849,7 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None, style='se
     
     return result
 
-def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
+def generateJson2(request=False, outputFilename=None, plot=False, fake=False):
     if request:
         requestJs()
         
@@ -875,7 +875,7 @@ def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     #     X = json.loads(f.read())
     # ind = random.choice(range(len(X)))
     
-    trX = knnRegress(X, n_points=200)
+    trX = knnRegress(X, n_points=30)
     
     forecasts = forecast2(trX, data=X, fids=fids, S=0.5, L=0.5)
     
@@ -930,7 +930,10 @@ def generateJson2(request=None, outputFilename=None, plot=False, fake=False):
     print("Sending POST requests...")
     with open(path / 'data' / 'fake-data' / outputFilename, 'r') as f:
         jsdict = json.loads(f.read())
-    r = requests.post('http://192.168.101.21:18888/adapter/upload', data=json.dumps(jsdict))
+    #r = requests.post('http://192.168.101.21:18888/adapter/upload', data=json.dumps(jsdict))
+    #r = requests.post('http://192.168.101.21:18888/adapter/upload', data={'pxeconfig': open(path / 'data' / 'fake-data' / outputFilename).read()})
+    #with open(path / 'data' / 'fake-data' / outputFilename, 'rb') as f:
+    r = requests.post('http://192.168.101.21:18888/adapter/upload', files={'file': open(path / 'data' / 'fake-data' / outputFilename, 'rb')})
     print(r.status_code, r.reason)
     return jsdict
 
@@ -939,7 +942,7 @@ if __name__ == '__main__':
     ######################################
     t1 = time.time()
 
-    result = generateJson2(plot=False, fake=True)
+    result = generateJson2(request=False, plot=False, fake=True)
     
     print(result['analysis']['summary'])
     

@@ -875,7 +875,7 @@ def generateJson2(request=False, outputFilename=None, plot=False, fake=False):
     #     X = json.loads(f.read())
     # ind = random.choice(range(len(X)))
     
-    trX = knnRegress(X, n_points=30)
+    trX = knnRegress(X, n_points=200)
     
     forecasts = forecast2(trX, data=X, fids=fids, S=0.5, L=0.5)
     
@@ -918,7 +918,7 @@ def generateJson2(request=False, outputFilename=None, plot=False, fake=False):
     models, fis = featureImportances2(trX, fids)
     controlStrategy = controlStrategiesRandom(forecasts, models, fids, mapping, style='dark_background')
     #print(forecasts)
-    analyses = analysis(X, fis, forecasts, fids, mapping, style='dark_background')
+    analyses = analysis(X, fis, forecasts, fids, mapping, style='seaborn')
     #print(sentences)
     print(analyses['summary'])
     jsdict = {'datetime': time.time(), 'featureImportances': fis, 'forecasts': forecasts, 'controlStrategies': controlStrategy, 'analysis': analyses}
@@ -942,7 +942,7 @@ if __name__ == '__main__':
     ######################################
     t1 = time.time()
 
-    result = generateJson2(request=False, plot=False, fake=True)
+    result = generateJson2(request=False, plot=False, fake=False)
     
     print(result['analysis']['summary'])
     

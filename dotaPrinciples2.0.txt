@@ -93,3 +93,59 @@ Enchantress is not a natural pusher/farmer, he is also a pseudo-carry, so enchan
 To answer back the question of how do I know if they have made a mistake: their right actions would be to exploit our weaknesses. If they don't do that, they are making a mistake, because they are not doing the balancing act. So we should ask: What are our weaknesses? What should they do to exploit our weaknesses? Are they doing what they should do to exploit our weaknesses?
 
 But asking this question doesn't invite answers on what we should do exactly, we would just know that they have made a mistake, and we can identify the mistake. 
+
+11. BSJ summarized the general itemization for carries to solo-carry the game:
+a) first, an item to clear waves fast. Example, Mjolnir, Maelstrom, Battlefury, Radiance, etc. For some heroes like Sven, that item is attack speed because he already has cleave. For some others that have nukes, that item is mana-regeneration. The carry must flash-farm, clear creep waves and clear neutral camps fast enough, while pushing the lane faster. This is crucial because it lets carries apply pressure in the form of pushing lanes. Pushing lanes reveal information about enemies. If the enemy tps to it, it means he can't be at another part of the map at that time, so we can take advantage of that and fight at other lanes. If the enemy doesn't show up, it means they are either neutral-farming, or smoking, so we should back off abit until more information is revealed. If enemies are all at other parts of the map, we can take this tower safely. Pushing lane also forces them to react to it, otherwise the tower takes damage from the pushed lane. This is especially important when the lane has catapults.
+
+b) then, an item for survivability. Manta Style, BKB, Linken Sphere, etc. So the carry can push deep into enemy territory and be survivable when enemies react to gank him. This applies a lot of pressure to enemy.
+
+c) then an item to guarantee solo kill. Abbysal Blade, Daedelus, MKB, etc. So when the carry pushes deep, not only he's not easily stopped or killed (because he is survivable), if enemy brings one hero to defend the push, he risks getting solo-killed by the carry! One hero is not enough to defend, so more heroes need to be brought there to stop the push, thereby creating a lot of space.
+
+d) finally an item to go high-ground, something like Aegis, Satanic, etc. 
+
+This four itemization principles do not just apply to cores, but this is especially crucial to cores.
+
+Use this framework to analyze carry potential of heroes:
+Sven: MOM or Midas (for attack speed required by flash-farming), Echo Saber (more attack speed, and strength), Aghanim Scepter (solo-kill threat, more survivability), Silver Edge (survivability), BKB (survivability, high-ground), Abbysal Blade (more survivability and solo-kill threat).
+
+Windranger: Linken Sphere (survivability + flash-farm), MKB (solo-kill threat), Blink (solo-kill threat), BKB (surivivability), Deadelus (solo-kill threat)
+
+Lycan: Necronomicon (flash-farm, solo-kill), Assault Cuirass (survivability), BKB (survivability), Abbysal Blade (solo-kill)
+
+12. How I got from 900 MMR to 1500 MMR (+600 MMR) in two weeks:
+a) restrict my hero pool such that in which:
+a.1) I have at least about 50% recent winrate on each hero. (Don't play Dazzle, Bristleback, Spectre, because my winrate on them is low!)
+a.2) For each position I have at least 3 heroes to choose from.
+a.3) a few uncommon heroes should be included (in case some more common heroes are banned or picked), such as Lycan.
+
+b) Last pick.
+
+c) Pick for the position that is left to pick. For example, if we don't have position 3, pick 3, don't pick 1.
+
+d) If multiple choices exist for a position based on my hero pool, pick the one that most counters the enemies (having more greens on enemy side, at the Dota Plus suggestion).
+
+e) Go to correct lane based on my position.
+
+f) Lane correctly: decide if I'm laning aggressively, normally, or cheesing.
+
+g) Itemize correctly, that solves the most important issues when trying to play my role effectively.
+
+h) Push based on correct timing (catapult), and fight based on my power spike.
+
+i) if safe choices exist on whether to farm jungle or push, always go for push.
+
+j) position correctly
+
+k) take space or create space based on my position
+
+l) do my job well
+
+m) soft-committing if I'm position 1 or 2. Position 3, 4, 5 should hard commit, and itemize accordingly.
+
+Using this strategy, I'm able to climb quickly.
+
+If I want to expand my hero pool, or train a particular hero, I should that in Normal Games. Based on my observation, I would get matched with players of, on average, around my Ranked MMR in Normal games, but with more variance (e.g., chance of getting matched with Legend when I'm Guardian, but the average MMR on both sides are correct). That way I can expose myself to playstyles/mistakes from lower or higher than my MMR. If I can win 3 games in a row, that means if assuming 3-streak-probability is 1/8, then my winrate is 0.5. That is, I have 0.875 chance (7/8 prob) to be correct when I say my winrate is above 50%. That further means my hero is well-trained at this MMR. My goal is to train it to 50%, then only play this hero when the draft calls for it, that way I guarantee my winrate for that hero to be above 50%.
+
+
+
+ 

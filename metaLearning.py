@@ -875,7 +875,7 @@ def generateJson2(request=False, outputFilename=None, plot=False, fake=False):
     #     X = json.loads(f.read())
     # ind = random.choice(range(len(X)))
     
-    trX = knnRegress(X, n_points=200)
+    trX = knnRegress(X, n_points=100)
     
     forecasts = forecast2(trX, data=X, fids=fids, S=0.5, L=0.5)
     

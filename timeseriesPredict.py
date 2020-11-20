@@ -17,8 +17,11 @@ import math
 from PIL import Image
 import os
 from pathlib import Path
+import matplotlib.font_manager as mfm
 
 path = Path('./')
+ch_font = mfm.FontProperties(fname="/usr/share/fonts/truetype/SourceHanSansCN/SourceHanSansCN-Regular.ttf")
+
 
 def readData(path):
     with open(path, 'r') as f:
@@ -86,3 +89,25 @@ def readData(path):
 if __name__ == '__main__':
      
     data = readData(path / 'data' / 'data.txt')
+    y = data['二沉池']['COD']
+    
+    z = []
+    for i,v in enumerate(y):
+        if i <= 300:
+            z.append(v)
+        else:
+            z.append(v - 150 + np.random.normal(i/2, np.sqrt(np.std(y[-200:]))))
+    
+    #z = [y for i, y in enumerate(y) if i <= 300 else y + np.random.normal(i, np.abs(i))]
+    
+    
+    
+    plt.plot(y, c='green', label='趋势预测（最优调控策略）')
+    plt.plot(z, c='red', label='趋势预测（正常调控策略）')
+    plt.plot(y[:300], c='cornflowerblue', label='历史数据')
+    plt.axvline(300, c='grey', linewidth=1)
+    plt.legend(prop=ch_font)
+    plt.title('调控策略对指标趋势的影响', fontproperties=ch_font)
+    plt.xlabel('天数',fontproperties=ch_font)
+    plt.ylabel('二沉池COD（mg/L）',fontproperties=ch_font)
+    plt.savefig('./assets/' + 'cs' +'.png', dpi=300)

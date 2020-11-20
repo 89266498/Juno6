@@ -144,8 +144,36 @@ m) soft-committing if I'm position 1 or 2. Position 3, 4, 5 should hard commit, 
 
 Using this strategy, I'm able to climb quickly.
 
-If I want to expand my hero pool, or train a particular hero, I should that in Normal Games. Based on my observation, I would get matched with players of, on average, around my Ranked MMR in Normal games, but with more variance (e.g., chance of getting matched with Legend when I'm Guardian, but the average MMR on both sides are correct). That way I can expose myself to playstyles/mistakes from lower or higher than my MMR. If I can win 3 games in a row, that means if assuming 3-streak-probability is 1/8, then my winrate is 0.5. That is, I have 0.875 chance (7/8 prob) to be correct when I say my winrate is above 50%. That further means my hero is well-trained at this MMR. My goal is to train it to 50%, then only play this hero when the draft calls for it, that way I guarantee my winrate for that hero to be above 50%.
+If I want to expand my hero pool, or train a particular hero, I should do that in Normal Games. Based on my observation, I would get matched with players of, on average, around my Ranked MMR in Normal games, but with more variance (e.g., there's a chance of getting matched with Legend when I'm Guardian, but the average MMR on both sides are correct). That way I can expose myself to playstyles/mistakes from significantly lower or higher than my MMR. If I can win 3 games in a row, that means assuming 3-streak-probability is 1/8, then my winrate is 0.5. That is, I have 0.875 chance (7/8 prob) to be correct when I say my winrate is at least 50%. That further means my hero is well-trained at this MMR. My goal is to train it to 50%, then only play this hero when the draft calls for it, that way I guarantee my winrate for that hero to be above 50%.
 
+Of course, sometimes even when I pick and play according to above strategy, I still lose (e.g., I picked Ogre Magi and have all greens on allies and enemies, and I even won offlane and took their safelane tower at 5min, but enemy midlane Legion stomping our mid Invoker, and snowballing from there until we lose, this is unpreventible, but it occurs like 1/10 times when I pick and play correctly). We have to acknowledge that there are games where we have no control over even if we do everything correctly. But on an equal chance, we could also have this stomping player on our side. So in the long run, this shouldn't affect our general winrate.
 
+On the flip side, when I played according to the strategy laid out above, we tend to have easier game, at least good early game, and we tend to win 7/10 times. When I don't do that, I notice that we would have harder games, and tend to lose lanes or lose games 7/10 times. 
 
- 
+13. I have two system of meta-learning:
+13.1. Exploit the guaranteed strategy in Ranked games, until the game plateaus (winning only 2 out of 4 games),then  Explore for guaranteed strategy in Normal games. Guaranteed Strategy is found when I have 3-win-streak in Normal Games.
+
+13.2. Exploit the guaranteed strategy in Ranked games, until the game plateaus, then Explore for guaranteed strategy, until I win only 1 or less out of 4 games, I fall back to Exploiting previous guaranteed strategy until I win back my previous MMR before the exploring phase. All exploiting and exploring are done in Ranked games. 
+
+13.3. Definitions of effectiveness of strategy by winrate:
+
+Out of 4 games,
+win 3 or 4 games => effective strategy
+win 2 games => non-losing strategy
+win 1 or 0 games => losing strategy
+
+13.4. I think the best meta-learning strategy is:
+By default, performing "Exploit and Explore in Ranked" mode, Explore whenever my game plateaus (winning 2 games out of 4), and Exploit whenever I'm losing 3 games out of 4 games. 
+
+If I'm consistently losing 3 games out of 4 games even in Exploit mode, that means my previous strategy is losing. So I go into "Exploit in Ranked, Explore in Normal" mode, so that I can explore for no cost in MMR. I exit this mode when I've found a strategy that wins 3 games in a row in Normal games.
+
+14. Meta-Learning:
+
+At a given Meta, the optimal strategy is to learn what hero is overpowered at different MMR ranges (winrate is higher than 66.6% whether it's on allied or enemy side), and exploit that to gain MMR. Then as MMR increases, an overpowered hero gets countered (winrate drops to around 50% or even below that), and that gives us the chance to learn how to counter that overpowered hero. 
+
+If a hero is overpowered at an MMR range, that means it is already proven to win easily at that bracket because it is less countered, so it can be used to gain MMR. Then the winrate going down signaling that the hero is getting countered, and we can learn from that. We stop exploiting the hero when we feel that the hero is not overpowered, and we know how to counter that hero. We also learn how to have the best synergy with that hero. In future, we only pick Sven when it is known to be a good game/draft for Sven. If enemy picks Sven, we know how to counter it. If ally picks Sven, we also know what to do to give Sven the game of his life.
+
+Example: at 1260 MMR, I feel that Sven is overpowered when he gets Aghanim Scepter. So I first pick and spam it. Until 1500 MMR, Sven gets countered heavily, and I've learned how to use and counter Sven. In this process, I gained about 200 MMR (equivalent of 7 win-streak gain) as well as deeper knowledge about Sven and other heroes. Now I can repeat this on Faceless Void, because I feel that he is overpowered.
+
+After doing this process many times for about 5 different overpowering heroes (each gaining me 200 MMR), I can gain 1000 MMR and learning deeper knowledge about dota. I can even get into Archon rank! This balances the exploitation vs exploration tradeoff very well, and it gains MMR and learns different heroes very efficiently. And at every MMR bracket, it gives us the direction for learning (works like gradient in 
+

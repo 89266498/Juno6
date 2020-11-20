@@ -2,8 +2,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import random
 import progress.bar as progBar
-from sklearn.linear_model import BayesianRidge , LassoCV
+from sklearn.linear_model import BayesianRidge , LassoCV, RidgeCV
 from pathlib import Path
 
 path = Path('./')
@@ -19,7 +20,7 @@ def knnRegress(X, n_points=300):
     maxT = int(max(T))
     
     Ts = range(minT, maxT+0*int((maxT-minT)/n_points), int((maxT-minT)/n_points))
-    
+    #Ts = sorted(random.sample(range(minT, maxT), n_points))
     trX = []
     bar = progBar.Bar('Regressing data...', max=len(Ts))
     for t in Ts:
@@ -71,19 +72,44 @@ def forecast2(trX, data, S=0.5, L=0.5, A=0.1, absolute=True, plot=True, style='d
         trainY = np.array([trX[s+i,ind] for i in range(len(trX)-s)])
         # print(np.shape(trainX))
         #print(np.shape(trainY))
-        regr = BayesianRidge(normalize=False, fit_intercept=True).fit(trainX, trainY)  #RidgeCV(normalize=True, alphas=[1e-7,1e-6,1e-5,1e-4,1e-3, 1e-2, 1e-1, 1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7]), LassoCV(normalize=True, fit_intercept=False, alphas=10**np.array(list(range(2,8))))
-
+        regr = RidgeCV(normalize=True, fit_intercept=True).fit(trainX, trainY)  #RidgeCV(normalize=True, alphas=[1e-7,1e-6,1e-5,1e-4,1e-3, 1e-2, 1e-1, 1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7]), LassoCV(normalize=True, fit_intercept=False, alphas=10**np.array(list(range(2,8))))
+        
+        
         coefs = regr.coef_
-
         intercept = regr.intercept_
+        #plt.plot(coefs)
+        #plt.show()
+        
+        iterations = 20
+        offsprings = 10
         
         
+        for iteration in range(iterations):
+            print('iteration', iteration+1, 'out of', iterations)
+            cs = [np.random.normal(coefs, np.abs(coefs/10)) for i in range(offsprings)] + [coefs]
+            intercepts = [np.random.normal(intercept, 1*np.abs(intercept/10)) for i in range(offsprings)] + [intercept]
+            #j = random.choice(range(len(trainX)))
+            fcYs = [[np.dot(cs[k], x) + intercepts[k] for x in trainX] for k,c in enumerate(cs)]
+            #print('predicted', fcYs)
+            errs = [np.mean(np.abs(trainY - np.array(fcY))) + 0*np.abs(np.linalg.norm(cs[k])-0) + 0*intercepts[k] for k, fcY in enumerate(fcYs)]
+            print('errs',errs)
+            
+            j = np.argmin(errs)
+            
+            coefs = cs[j]
+            intercept = intercepts[j]
+            #plt.plot(coefs)
+            #plt.show()
+        
+        #g = lambda x: p(x)/np.sqrt(np.sum(coefs**2)) - intercept/np.sqrt(np.sum(coefs**2)) + intercept
         #print('intercept', intercept)
         
         #coefs = coefs / np.linalg.norm(coefs)
-        #coefs = np.clip(coefs, -0.5,0.5) 
-        #print('mag',np.linalg.norm(coefs))
-        #print('coefs', coefs)
+        #coefs = np.clip(coefs, -np.inf,np.percentile(coefs, 98)) 
+        #plt.plot(coefs)
+        #plt.show()
+        print('mag',np.linalg.norm(coefs))
+        print('coefs', np.round(coefs,2))
         C.append(coefs)
         I.append(intercept)
         regrs.append(regr)
@@ -101,10 +127,11 @@ def forecast2(trX, data, S=0.5, L=0.5, A=0.1, absolute=True, plot=True, style='d
             #print(fcX)
             #print(np.shape(fcX))
             #print(np.array([fcX]))
-            fcY, std = regr.predict([fcX], return_std=True)#, return_std=True
+            #fcY, std = regr.predict([fcX], return_std=True)#, return_std=True
+            #fcY = fcY/np.sqrt(np.sum(coefs**2)) - intercept/np.sqrt(np.sum(coefs**2)) + intercept
             #fcY = regr.predict([fcX])
             #std = fcY*0.1
-            #fcY = [np.dot(coefs, fcX) + intercept]
+            fcY = [np.dot(coefs, fcX) + intercept]
             #print(fcY)
             #print(std)
             #Y = np.append(Y, fcY[0])
@@ -196,7 +223,7 @@ def forecast2(trX, data, S=0.5, L=0.5, A=0.1, absolute=True, plot=True, style='d
     
     return ydicts
 
-def predict(X, n_points=100, **kwargs):
+def predict(X, n_points=200, **kwargs):
     trX = knnRegress(X, n_points=n_points)
     result = forecast2(trX, data=X, **kwargs)
     return result
@@ -210,29 +237,34 @@ if __name__ == '__main__':
     
     regr = BayesianRidge(normalize=True, fit_intercept=True).fit(np.array(range(len(prices))).reshape(-1,1), np.array(prices).reshape(-1,1))
     p = lambda x: regr.predict(x, return_std=True)
+    coefs = regr.coef_
+    intercept = regr.intercept_
+    
+    g = lambda x: p(x)/np.sqrt(np.sum(coefs**2)) - intercept/np.sqrt(np.sum(coefs**2)) + intercept
     
     pred, std = p(np.array(range(len(prices))).reshape(-1,1))
     
-    plt.plot(prices)
-    plt.plot(pred)
-    plt.plot(pred+2*std, c='orange', linewidth=1)
-    plt.plot(pred-2*std, c='red', linewidth=1)
+    #plt.plot(prices, linewidth=1)
+    #plt.plot(pred)
+    #plt.plot(pred+3*std, c='orange', linewidth=1)
+    #plt.plot(pred-3*std, c='red', linewidth=1)
     #plt.show()
     
-    upp = pred + 2*std
-    lwr = pred - 2*std
-    print(pred)
-    y = np.multiply(1*std, np.tanh(np.divide((prices - pred),1*std))) + pred
+    upp = pred + 3*std
+    lwr = pred - 3*std
+    #print(pred)
+    y = np.multiply(3*std, np.tanh(np.divide((prices - pred), 3*std))) + pred
     #y = prices
     #y = np.clip(pred, upp, lwr)
-    plt.plot(y, c='cornflowerblue', linewidth=1)
-    plt.show()
+    #plt.plot(y, c='cornflowerblue', linewidth=1)
+    #plt.show()
+    y=prices
     data = [list(zip(range(len(y)), y))]
-    result = predict(data, S=0.4, A=0.2, L=10, train=8/10)
+    result = predict(data, S=0.1, A=0.9, L=1, train=9.99/10)
         
         
     
     
     
     
-   # https://wylu.me/posts/eed37a90/
+   

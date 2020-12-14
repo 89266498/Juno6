@@ -175,5 +175,174 @@ If a hero is overpowered at an MMR range, that means it is already proven to win
 
 Example: at 1260 MMR, I feel that Sven is overpowered when he gets Aghanim Scepter. So I first pick and spam it. Until 1500 MMR, Sven gets countered heavily, and I've learned how to use and counter Sven. In this process, I gained about 200 MMR (equivalent of 7 win-streak gain) as well as deeper knowledge about Sven and other heroes. Now I can repeat this on Faceless Void, because I feel that he is overpowered.
 
-After doing this process many times for about 5 different overpowering heroes (each gaining me 200 MMR), I can gain 1000 MMR and learning deeper knowledge about dota. I can even get into Archon rank! This balances the exploitation vs exploration tradeoff very well, and it gains MMR and learns different heroes very efficiently. And at every MMR bracket, it gives us the direction for learning (works like gradient in 
+After doing this process many times for about 5 different overpowering heroes (each gaining me 200 MMR), I can gain 1000 MMR and learning deeper knowledge about dota. I can even get into Archon rank! This balances the exploitation vs exploration tradeoff very well, and it gains MMR and learns different heroes very efficiently. And at every MMR bracket, it gives us the direction for learning (works like gradient in machine learning.)
 
+15. Sven experiment outcome:
+The Sven is overpowered until MMR=1500, where he starts getting countered by BKBs, Linken, Lotus Orb, some dodging spells, and counter-initiation stuns (e.g. Earthshaker, Tidehunter, Faceless Void, etc.). Sven also relies very heavily on BKB to fight effectively, so his timing is delayed. So I learned that Sven can be countered, even though he farms very fast!
+
+16. A thorough analysis of my current hero pool based on BSJ's solo carry criteria.
+
+score criteria:
+wave-clear: 
+0* = just like normal creep
+1* = slowly pushing the wave due to aura
+2* = attacking creeps with more damage, having more units. (Bane elementals, early Phantom Lancer, Lycan wolves with aura, Necronomicon, enchanted creep, including early Drow Ranger, Venomancer's wards)
+3* = can damage an area of creeps, AOE effect, but the damage is not high enough to clear creep in one shot. Having to spend some mana. If cleaving, the attack speed is slow. (Windranger powershot, Sven's cleave, Shadow Shaman electric shock, most aoe nukes.)
+4* = AOE damage, spammable (low cd, low mana), but still takes a few seconds to clear waves. (Medusa splitshot, Viper's nethertoxin, Sven's cleave with attack speed, etc.) 
+5* = Can one-shot the whole creep wave, low mana, low cd. (Mjolnir, farmed carries).
+
+survivability:
+0* = very squishy, no escape mechanism, slow movement speed. (Sniper), Will certainly die if ganked by one strong hero or two weak heroes, sometimes even just one weak hero.
+1* = can stun enemy and run. (Sven) Takes one strong and one weak heroes to kill. Can sometimes survive if HP is high enough.
+2* = can stun enemy and run quickly, or can evade attacks (Windranger, Sven with warpath)
+, takes one strong and one weak hero to kill, can sometimes survive even if HP is low.
+3* = can run very quickly or has defensive tanking spell (heal, magic resistance, armor, increased HP, status resistance), or can escape instantly (can be countered, such as invisibility). Usually with 3*, a hero can die when ganked by one strong + two weak heroes.
+4* = strong tanking ability, takes many spells and damage to kill. Can easily escape two strong heroes gank, or one strong + 3 weak heroes gank. (Windranger with Linken + BKB, Sven with Satanic + BKB + Aghanim, Viper with Heart + Assault + Pipe, Medusa with Manta Style + Skadi, Anti-Mage with Manta Style).
+5* =  can tank the whole enemy's team damage and survive very long. (Farmed Bristleback, farmed Medusa, farmed Anti-Mage, etc.)
+
+Solo-kill:
+0* = Can't kill alone.
+1* = Can't kill alone, but sometimes, can kill alone with the right spell or by chance.
+2* = Can severely damage one or more heroes (can harass), when enemy gets low enough, can kill (Medusa with Mystic Snake, Lion, Axe, Skywrath, etc.).
+3* = Can quickly kill a hero from full HP, with other hero assisting (usually stuns or slows), because the target can still escape. Or if the target's HP is half or make a positioning mistake, can quickly kill him without needing any help (Windranger with MKB, Lycan's charge, Anti-Mage with Manta Style, etc.).
+4* = Can quickly solo-kill a single hero from full HP, guaranteed in most cases. (Windranger with MKB + Blink, Viper with ulti and nethertoxin, Anti-Mage with Abbysal Blade, Shadow Fiend with Blink + Euls, Sven with Aghanim + BKB + ulti + attack speed).
+5* = Can quickly solo-kill multiple heroes (Faceless Void's Chrono with damage items, Sven with Daedelus + Aghanim, Medusa with rapier, etc.)
+
+High-ground:
+0* = low survivability, low kill potential (most supports)
+1* = low survivability, good damage (some supports with long range damage nukes)
+2* = okay survivability, good damage (sniper with hurricane pike)
+3* = high survivability, good damage.
+4* = high survivability, 4* kill potential
+5* =  5* survivability, 5* kill potential
+
+16.1. Windranger:
+wave-clear: 3*, long-range, low cd nuke, good damage but not enough to clear the whole wave (although can secure range creep), cannot clear catapult, uses a lot of mana if spammed. Requires damage item/mana regeneration to be 4*, maelstrom makes her 5*. She is not yet the definition of flash farm, but can definitely apply good pushing power if needed.
+survivability: 3*, windrun is short on CD, 100% evasion, increased movement speed helps in escaping, but she doesn't have free movement (so can be blocked by Earthshaker fissure), can be countered by True Strike, doesn't make her survivable through magic damage and disables. At level 25, she can go invisiable, makes her survivability 4*. This typically means she can survive 2-man gank usually if enemy has only one disable, but not 3-man gank, in late-game with invisibility she can survive 3-man gank usually. Linken Sphere/BKB/Aghanim makes her survivable 4*, having more than two of these items makes her 5* (extremely hard to kill).
+Solo-kill potential: without focus fire, this is 1*. Otherwise 2*, using focus fire. Once hitting 6, if enemy is alone, has no escape, no heal, and is not tanky, she can solo-kill the lone hero. She needs a lot of conditions for a successful solo-kill with only just phase boots. If she has damage-item like MKB, this gives 3*. The problem is she still has to walk up and ulti, giving enemy some reaction time to escape. It is also reliant on good shackleshot to increase ulti's damage. If enemy has escape or stun, she usually cannot kill the enemy. She needs another reliable disable/initiation. If she has blink dagger or invisibility, she is now 4* kill potential. She's not 5* because her damage is single-target, and can be countered by Linken Sphere, Lotus Orb, Blademail, etc. and some spells, unless she has too high burst damage like Daedelus to blow up supports.
+High-Ground potential: 2* if only one survivable item, 3* if having two survivable items, 4* if having tank item (heart, satanic, shiva, skadi, etc.) or Cheese, 5* if having aegis.
+
+So at level 6 without any core item, Windranger's solo carry profile is 3/3/2/2, score is 2.5 out of 5. So she's quite average in terms of solo carry potential. If she has maelstrom + blink, her profile becomes 4/3/3/2 = 12, which is strong, but not overpowered. If she gets another Linken or BKB, her profile becomes 4/4/3/2 or 4/3/4/2 (if MKB), score = 13, which is even stronger. If she gets heart, her profile becomes 4/4/4/4, score=16, overpowered. A typical Windranger built of Phase, Maelstrom, Blink, BKB, Linken, MKB has profile 4/5/4/3 = 16 (overpowered).
+
+The question is also about how fast can she get to a profile score of > 12 faster than any other hero. Windranger can get to score 12 by 23 min (phase boots + MKB or Phase + Maelstrom + MKB).
+
+16.2. Anti-Mage:
+wave-clear: 0*. If has battlefury, 4*. If has battlefury + yasha, 5*
+Survivability: 2* with either Counterspell or Blink, 3* with counterspell and blink. 4* with Manta Style, 5* with Linken Sphere or BKB.
+Solo-Kill: 1* if no mana void, but only mana burn. 2* if mana-void. 3* if manta-style, 4* if having Basher, 5* if having Abbysal Blade.
+High-ground potential: 3*, 4* with Skadi or Heart (after all other items), 5* if aegis or cheese.
+
+Anti-Mage lvl 6 profile: 0/3/2/3 = 8 (weak, can screw up early game). However, if he gets battlefury, his profile now becomes 4/3/2/3 = 12, which is overpowered with the pushing ability. He can get to 13 by 22 min (power treads + Battlefury). So here we conclude that Anti-Mage can solo-carry game if he has good early game and can get battlefury by 20 min.
+
+16.3. Sven:
+wave-clear: 3* with cleave, 4* with attack speed item (MOM, Echo Saber, Midas etc.), 5* with daedelus.
+Survivability: 2* with warpath, 3* with BKB or shadow blade/silver edge, 4* with Aghanim + BKB/shadow blade, 5* with Satanic/Cheese + 4* survivability items.
+Solo-kill: 2* with ulti, 3* with ulti + MOM, 4* with Aghanim Scepter, 5* with Daedelus.
+High-Ground: same as survivability.
+
+Sven level 6 profile with boots + MOM is 4/2/3/2 = 11. He can get to the score of 13 with item build Power Treads, MOM, Echo Saber, BKB by 23 min.
+
+16.4. Enchantress:
+wave-clear: 0*, 2* if having neutral creep that can push, 3* if having maelstrom, 4* if maelstrom + some attack speed, 5* if Mjolnir.
+Survivability: 2* if max heal, 3* if max heal + untouchable, 4* if having one tank item (pipe, aeon disk, etc.), or Linken/BKB/aghanim/Hurricane Pike, 5* if having two tanky items. Bloodstone is a tank item.
+Solo-kill: 2* if max Impetus, 3* if Dragon Lance, 4* = 3* + attack speed item (Moonshard, Bloodthorn etc.), 5* = 4* + Damage item.
+High-ground: survivability score-1, 5* if having three tanky items.
+
+Enchantress at level 6 has profile 0/2/2/1 = 5, very weak solo carry potential. At min 23, she can have power treads + Maelstrom + dragon lance = 3/3/3/2 = 11 or at min 21, she can have power treads + Mjolnir = 5/3/2/2 = 12. 
+
+With built 1 (PT, Maelstrom, Dragon Lance), her next item is either Mjolnir or Hurricane Pike, with scores 14 and 13 for each case respectively by about 29~30 min. Built 1 gives more options, if need to survive better and fight early, get Hurricane Pike, if survivability is not a problem, get Mjolnir.
+
+With built 2 (PT, Mjolnir), her next item is Hurricane Pike by 30 min, with the score of 16. Usually with this built, she passes the score of 13 at min 25.
+
+This means Enchantress's solo carry potential is weaker, because her potential grows slower.
+
+16.5 Medusa:
+wave-clear: 2*, 3* with Mystic Snake, 4* with attack speed or damage or one big stats item, 5* with attack speed and damage.
+Survivability: 2* with max shield, 3* with ulti, 4* with one stats item (manta style, skadi, Linken Sphere, Hurricane Pike etc.), 5* with two stats item or one stats + BKB, or simply having cheese/aegis.
+Solo-kill: 2*, enough to harass. With only skadi, 3*. with Skadi + attack speed or damage, 4*. Ulti doesn't give solo-kill potential, because enemy can disengage easily.
+high-ground: same as survivability.
+
+Medusa lvl 6 profile is 3/3/2/3 =  11. With power treads + manta style + Demon Edge at min 22 or yasha + Skadi, her profile becomes 4/4/3/4 =  15. So she's very strong. But she has obvious counters (Anti-Mage, early Push lineup, etc.).
+
+16.6. Viper:
+wave-clear: 4*, long range, low cd, low mana cost, good AOE, enough damage to clear whole wave, clear wave fast enough, can be used to clear camps. 5* if having maelstrom/mjolnir.
+
+survivability: 2* with passive (magic resistance), it works like blademail, but doesn't allow directly escape from ganks. 3* if getting mobility item (shadow blade, force staff), or one defensive item (bkb, aeon disk, linken) or one tank item, 4* if getting 2 3* items, 5* if getting 3 3* survivability items.
+
+solo-kill: 2* with nethertoxin and orbs, 3* with ulti (enemy can still escape if done correctly), 4* with shadow blade or rod of atos or Hex.
+
+high-ground: same as survivability.
+
+Viper lvl 6 profile is 4/2/3/2 = 11. Viper can get Phase Boots + Shadow Blade + Yasha at min 20, with profile 4/3/4/3 = 14. The playstyle is ganking their solo farmers, or remove one hero from their teamfight (pickoff). Another caster built is go for Power Treads + Force staff into Hurricane Pike + Hood of Defiance if needed, then go for aether lens + Aghanim Scepter. At min 20, Viper can have PT + Hurricane Pike + Hood of Defiance, this makes his profile 4/3/3/3 = 13, quite good. The idea is to siege highground using his ult, poison attack and Nethertoxin.
+
+17. Some Medusa's built found from Reddit:
+Phase or Treads, Yasha, Morbid Mask, Crit/MKB, Skadi or Damage depending on whether I need to be a tank or not.
+
+18. Viper should not overextend when he doesn't have any survivability item; Viper is just slightly tankier than most heroes, and that's it. He's not survivable when ganked by two heroes. So Viper should use spells when hitting powerspike, attack from range, and disengage and farm when such opportunities do not present. Viper is not a tank when he starts out in the early-mid game. He is more of a hero who can push waves and flash farm neutrals, strong ganker, teamfight pickoff from the edge of teamfight due to his attack range, and is slightly tankier than other similar heroes of the same role (e.g. Sniper).
+
+19. Windranger if go for maelstrom can delay her farm. Her core items should be MKB, Blink, BKB, Linken if needed. Maelstrom is either an early-mid game farming item, or counter illusions, so it is bought situationally. In all cases, if windranger gets fast MKB and blink, the game ends. I can perhaps try Windranger with boots + Javelin + blink, and go make huge plays to create space and map control. Then MKB, BKB, gg. To do this, go mid, focus on farming, spam powershots, boots straight to Javelin. With Javelin, I can gank and farm heroes. The problem with this is the mana issues. I should think about cheap and efficient ways of regenerating and using mana to spam powershots for last hitting and pushing waves.
+
+20. Windranger: MKB vs Orchid
+MKB costs 4800+, at 400~500 GPM, have to farm 10~12 min for it. Gives a lot more damage (with both physical and magical damage), and a bit harder to build up because of the demon edge.
+Orchid costs 3400+, requires about 7~9 min of farm to get it. It gives a lot of mana regen and mana (good for spamming powershots), gives 40% of damage compared to MKB, and gives an active to silence enemy so they can't run away. Damage wise, say attacking for 3 seconds with focus fire, using Orchid's soul burn, 30% of damage received during silence will be added as bonus magical damage, which means, she will deal about 1000 damage (330 DPS) * 130% = 1300 damage. At 9 min, a typical hero's health is about 1000, so 1300 is definitely enough to kill. Whereas using MKB, her DPS is about 600, which will deal about 1900 damage. At 12 min, a typical hero's health is about 1200, so 1900 damage is sufficient. 
+
+If I use Orchid, I can guarantee enemy from using spells and escaping, and I can assist better, but dealing less damage. While farming for Orchid, I can save up clarities in the long run, Orchid is also easier and faster to farm. If I use MKB, I can kill enemy faster, but I will have to take more time to farm, and I would have mana issues before that in the farming phase, MKB also has this larger window of time where I have to farm up Demon edge. 
+
+Ultimately, if enemy has evasion, I should have MKB. Or, I can go for Bloodthorn to have True Strike when used as active.　
+
+If I were to copy Pro's build, they usually go like boots, javelin, demon edge, mkb by 18 min, then usually BKB or Aghs by 25min. Then just buy whatever you need, blink, Linken, Boots of Speed, etc.
+
+21. Connecting the dots...
+
+BSJ's solo carry criteria = wave clear + survivability + solo-kill + highground
+
+BSJ's deadlane theory: my offlane + opponent safelane is about pressure (PRESSURE lane), my safelane + opponent offlane is about relieving pressure (DEPRESSURE lane), midlane has to be pushed out aways. If I'm strong & aggressive, I should just play between offlane & midlane. If I'm weak, I should stay at safelane and just relieving pressure. Don't solo-hit the T2 midlane tower, it's too dangerous because of its location (being close to anywhere on the map) and its ability to multishot glyph.
+
+BSJ's aggression theory: for Position 2,3,4,5,  they are creating space for Position 1 to farm. They should play the map where it removes enemy's ability to farm and force enemy to fight, and they should build items that help them fight and be aggressive.
+
+Cookie's Map Theory:
+The carry should take the safest farm (and also apply pressure when it is safe to do so). He should put his teammates between Enemies and him. This answers where a carry should be and what he should do. That also means I'm almost always furthest away from enemies. If I do that, then at higher MMR my teammates will play away from me, so they will most probably fighting enemies. If I'm a hero that should create space, I should play towards enemies (objectives).
+
+Blitz's Wave Shoving: Shove midlane + one side lane. This gives enough information, sometimes forces them to use TP, and splits enemies up, giving us huge opportunities for great plays.
+
+Show's hero attributes theory: at the most fundamental level, a hero has four (or more) attributes (or two or more mutually opposing attributes dualities):
+1st Duality (Trading) = Damage vs Tankiness
+2nd Duality (Condition) = Disable vs Mobility
+3rd Duality (Information) = Signal vs Noise
+4th Duality (Tempo) = Energy (Regen, Cooldown, Degen, etc.)
+5th Duality (Resources) = Fight vs Farm
+6th Duality (Map) = Space vs Time
+
+A hero is broken if on many attributes he is far above average. A hero is broken because he is not easily countered, so he can do his job very well, even better than his average game, so he creates this advantage. In ranked solo-queues, we can't make sure everyone drafts and plays perfectly, so often we have allies that are drafted and played at a disadvantage, same goes to opponents. It makes it more important for us to draft and play at an advantage so as to offset as much disadvantage as possible, if enemies are not doing that, they will have more weakness than us. A higher MMR will know how to exploit weakness better, so higher MMR also knows how to neutralize their weakness with strengths.
+
+In drafting, we always last pick.
+
+Question 1: what role is left for us to play?
+Question 2: Out of Damage, Tankiness, Disables, Mobility, what do we still lack against opponents? (Pick 2)
+Question 3: what hero (from our hero pool) counters them as well as filling up what we lack?
+Question 4: during the gameplay, what will hinder me from doing my job properly? What items solve those issues?
+
+Quick tip: Last pick, pick for the role, pick the hero that counters the most enemies.
+
+In drafting phase, if time is up, but our allies haven't yet picked, in order to avoid getting randommed, I must pick. Pick order should be supports >- Offlaner, Carry -> Midlane. I usually won't pick in the first pick phase, in 2nd pick phase, I will only consider offlaner or carry if any of these are lacking, or pick support if both roles are already fulfilled.
+
+In short: I should play to the correct role, picking hero that can neutralize our deficiency, as well as counter enemies. Then inside game I should itemize according to our fight vs farm orientation, as well as solving most pressing issues that could hinder me from doing my job properly. And, most importantly, I should do my job properly, I push out the correct wave and play at the correct part of the map. Picking the right hero, buying right items, doing right actions, being at the right place at the right time. But the limiting factor is my hero pool. Out of limited hero pool, I can usually pick the right role, but I sometimes can't counter hero or neutralize our deficiency very well, so I have to resort to itemization and playstyle. Since this is my hero pool, I should be able to itemize and play to the best possible outcome.
+
+Hero attributes theory is useful in deciding drafting, itemization and playstyle. It also explains why some meta heroes are broken.
+
+22. I gained MMR from 1070 to 1340 by spamming Windranger offlane. My default built is boots (tranquil boots if getting harrased a lot), Linken Sphere, MKB, Blink. Some variations:
+
+a. If I'm doing well, my teammates are doing well: boots, MKB, Blink, Boots of Travel, Abbysal Blade or Daedelus.
+
+b. If I'm doing well, my teammates are not: boots, Linken Sphere, MKB, BKB if enemy has lots of strong disables or magical damage, otherwise straight Blink, Abbysal Blade if against enemy carries, Daedelus if against heavy tank.
+
+c. Normal: Boots, Linken Sphere, MKB, Blink, Abbysal Blade or Daedelus
+
+d. If I'm doing badly, teammates are doing well: Tranquil Boots, Linken Sphere, MKB, Blink
+
+e. If all of us are doing badly: Tranquil Boots, Maelstrom, BKB. Maelstrom is good for farm and fight.
+
+23. MMR Draft strategy:
+first pick windranger. If Windranger is banned, pick Viper. If Viper is banned, pick Ogre Magi. If Ogre is banned, pick carry. When picking carry, be careful of potential counterpicks, e.g. only pick Medusa when anti-mage is banned, etc.
+
+24. I reached 1430 MMR (Guardian V rank) by spamming Windranger Linken + MKB built! I started to get into some Crusader games. I notice that Crusader players generally have better skills, better timings, better positionings, better laning mechanics, knowing how to punish enemies better, pushing waves faster, farming faster, as well as focusing more on counters. I first picked Windranger, and opponents actively ganked and harassed me in the laning stage, and knowing the opportunity to punish and kill me few times when my pos 4 got away from lane (and I still stayed in lane). I also notice that our pos4 also gave me more farm and CS, even as far as ogre, kunkka and wraith king letting me farm, so I can get enough momentum in the mid-game. They also know how to pull and contest pull. They also gank better, and reinforce quicker when we push tower or teamfight. Our carry has even gone as far as fighting early when we're in the momentum for teamfight/push. I notice that in these games, mistakes are more exploited by opponents, so it is important to reduce our mistakes, or alternatively give ourselves some room for mistakes. Linken Sphere is better than BKB in that respect because it prevents ourselves from making positioning mistakes. BKB doesn't do that because it requires an active reaction, which sometimes can be delayed or missed due to hesitation. Whenever there's an active decision involved in the teamfight aspect, there's also a risk of hesitation. Linken prevents myself from being hesitant, and makes the gameplay positioning easy: it acts as a signal for retreat when Linken is broken. It also gives enough regen to sustain the push and gank tempo, even though my attack damage and farming speed may not be too high until I get MKB, so I should play like a spell caster before MKB.

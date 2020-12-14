@@ -129,9 +129,9 @@ def forecast2(trX, data, S=0.5, L=0.5, A=0.1, absolute=True, plot=True, style='d
             #print(np.array([fcX]))
             #fcY, std = regr.predict([fcX], return_std=True)#, return_std=True
             #fcY = fcY/np.sqrt(np.sum(coefs**2)) - intercept/np.sqrt(np.sum(coefs**2)) + intercept
-            #fcY = regr.predict([fcX])
-            #std = fcY*0.1
-            fcY = [np.dot(coefs, fcX) + intercept]
+            fcY = regr.predict([fcX])
+            std = fcY*0.1
+            #fcY = [np.dot(coefs, fcX) + intercept]
             #print(fcY)
             #print(std)
             #Y = np.append(Y, fcY[0])

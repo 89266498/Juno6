@@ -224,10 +224,26 @@ def d2ts(d):
         fids.append(row['fid'])
     return timeSeries, fids
 
+def loadJss():
+    print('Loading from Js...')
+    with open(path / 'data' / 'fake-data' / 'data_input.json', 'r') as f:
+        js = json.loads(f.read())
+    
+    time = js['tick']
+    mapping = js['mapping']
+    data = js['data']
+    
+    with open(path / 'data' / 'fake-data' / 'control_input.json', 'r') as f:
+        js = json.loads(f.read())
 
-
-
-
+    controlDecision = js
+    
+    d = {'time': time, 'mapping': mapping, 'data': data, 'controlDecision': controlDecision}
+    print('Saving JSON data...')
+    with open(path / 'data' / 'fake-data' / 'requested.json', 'w') as f:
+        f.write(json.dumps(d))
+        
+    return time, mapping, controlDecision, data
 
 
 def requestJs():
@@ -629,18 +645,42 @@ def translate(fid, mapping):
 def unit(fid, mapping):
     return ' ' + mapping[fid]['unit']
 
-def controlStrategiesRandom(forecasts, models, fids, mapping, style='seaborn'):
-    y = random.choice(forecasts['forecast'])
-    targetIndex = forecasts['forecast'].index(y)
-    maximization = round(random.random())
-    mode = 'max' if maximization else 'min'
-    
-    model = models[targetIndex]
-    
-    controlVars = random.sample(fids[:targetIndex]+fids[targetIndex+1:], k=random.choice(range(3,7)))
+def controlStrategiesRandom(forecasts, models, fids, mapping, controlDecision=None, style='seaborn'):
+    if controlDecision:
+        print('contorlDecision', controlDecision)
+        targetVar = controlDecision['target_var']['id']
+        #targetVar = 'INTAKE_pump_M5__cod'
+        #targetVar = random.choice(fids) #for testing
+        mode = controlDecision['action']
+        maximization = True if mode=='max' else False
+        controlVars = [d['id'] for d in controlDecision['regulation_var']]
+        cvs = []
+        for cv in controlVars:
+            if cv in fids:
+                cvs.append(cv)
+        #print('asr_a__svi' in cvs)
+        controlVars = cvs
+        print('controlVars1', controlVars)
+        #controlVars = ['INTAKE_ssw_agc_M1440__no3_n']
+        #controlVars = random.sample(fids, 3) #for testing 
+        targetIndex = fids.index(targetVar)
+        model = models[targetIndex]
+        
+    else:    
+        y = random.choice(forecasts['forecast'])
+        targetIndex = forecasts['forecast'].index(y)
+        maximization = round(random.random())
+        mode = 'max' if maximization else 'min'
+        
+        model = models[targetIndex]
+        
+        controlVars = random.sample(fids[:targetIndex]+fids[targetIndex+1:], k=random.choice(range(3,7)))
     #print('controlVars', controlVars)
     
     controlVarsIndices = []
+    print('fids', fids)
+    print('controlVars', controlVars)
+    
     newfids = fids[:targetIndex]+fids[targetIndex+1:]
     for cv in controlVars:
         controlVarsIndices.append(newfids.index(cv))
@@ -849,10 +889,11 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None, style='se
     
     return result
 
-def generateJson2(request=False, outputFilename=None, plot=False, fake=False):
+def generateJson2(request=False, outputFilename=None, plot=False, fake=False, loadFromJs=True):
+    
     if request:
         requestJs()
-        
+       
     if fake:
         data = readData()
         X, fids, mapping, controlDecision = loadData()
@@ -861,6 +902,10 @@ def generateJson2(request=False, outputFilename=None, plot=False, fake=False):
         #print(fids)
         X = data
         
+    elif loadFromJs:
+        loadJss()
+        X, fids, mapping, controlDecision = loadData()
+
     else:
         X, fids, mapping, controlDecision = loadData()
     
@@ -916,7 +961,7 @@ def generateJson2(request=False, outputFilename=None, plot=False, fake=False):
     #plt.axhline()
     #plt.show()
     models, fis = featureImportances2(trX, fids)
-    controlStrategy = controlStrategiesRandom(forecasts, models, fids, mapping, style='dark_background')
+    controlStrategy = controlStrategiesRandom(forecasts, models, fids, mapping, controlDecision=controlDecision, style='dark_background')
     #print(forecasts)
     analyses = analysis(X, fis, forecasts, fids, mapping, style='seaborn')
     #print(sentences)
@@ -942,7 +987,7 @@ if __name__ == '__main__':
     ######################################
     t1 = time.time()
 
-    result = generateJson2(request=False, plot=False, fake=False)
+    result = generateJson2(request=False, plot=False, fake=False, loadFromJs=True)
     
     print(result['analysis']['summary'])
     

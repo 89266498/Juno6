@@ -89,7 +89,7 @@ def readData(path):
 if __name__ == '__main__':
      
     data = readData(path / 'data' / 'data.txt')
-    y = data['二沉池']['COD']
+    y = data['匀质池']['TN']
     
     z = []
     for i,v in enumerate(y):

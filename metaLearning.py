@@ -404,7 +404,8 @@ def forecast2(trX, data, fids, S=0.5, L=0.5, A=0.1, absolute=True):
             #print(fcX)
             #print(np.shape(fcX))
             #print(np.array([fcX]))
-            fcY, std = regr.predict([fcX], return_std=True)#, return_std=True
+            fcY = regr.predict([fcX])#, return_std=True
+            std = fcY*0.1
             #fcY = [np.dot(coefs, fcX) + intercept]
             #print(fcY)
             #print(std)
@@ -723,7 +724,7 @@ def controlStrategiesRandom(forecasts, models, fids, mapping, controlDecision=No
         statement += '预计该调控策略将于' + str(time.ctime(cs['base']['t'])) + '使' + translate(fids[targetIndex], mapping) +  '调节至' + str(round(cs['base']['y'],2))+ unit(fids[targetIndex], mapping) + '。'
         suggestion.append(statement)
         ############
-        statement += '算法通过深度模型能给出最优的调控策略是：'
+        statement = '算法通过深度模型能给出最优的调控策略是：'
         ss = []
         pics = []
         for i, v in enumerate(cs['opt']['X']):
@@ -930,7 +931,7 @@ def generateJson2(request=False, outputFilename=None, plot=False, fake=False, lo
     
     trX = knnRegress(X, n_points=300)
     
-    forecasts = forecast2(trX, data=X, fids=fids, S=0.5, L=0.5)
+    forecasts = forecast2(trX, data=X, fids=fids, S=0.5, A=0.1, L=0.1)
     
     bar = progBar.Bar('Plotting forecasts...', max=len(I))
     for ind in I:

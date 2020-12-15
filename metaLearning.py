@@ -8,15 +8,15 @@ import numpy as np
 import json
 import os, sys
 import time
-import pandas as pd
+#import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as mfm
 from sklearn.linear_model import BayesianRidge, LinearRegression, RidgeCV, LassoCV
-from sklearn.neural_network import MLPRegressor
+#from sklearn.neural_network import MLPRegressor
 from sklearn.ensemble import RandomForestRegressor
 #from sklearn.linear_model import LinearRegression
-from scipy.optimize import curve_fit
-from multiprocessing import Pool
+#from scipy.optimize import curve_fit
+#from multiprocessing import Pool
 import pickle 
 import requests
 import progress.bar as progBar
@@ -226,16 +226,24 @@ def d2ts(d):
 
 def loadJss():
     print('Loading from Js...')
-    with open(path / 'data' / 'fake-data' / 'data_input.json', 'r') as f:
+    path0, path1 = sys.argv[1], sys.argv[2]
+    #print('haha')
+    print(path0, path1)
+    # with open(path / 'data' / 'fake-data' / 'data_input.json', 'r') as f:
+    #     js = json.loads(f.read())
+    
+    with open(path0, 'r') as f:
         js = json.loads(f.read())
     
     time = js['tick']
     mapping = js['mapping']
     data = js['data']
     
-    with open(path / 'data' / 'fake-data' / 'control_input.json', 'r') as f:
+    with open(path1, 'r') as f:
         js = json.loads(f.read())
 
+    # with open(path / 'data' / 'fake-data' / 'data_input.json', 'r') as f:
+    #     js = json.loads(f.read())
     controlDecision = js
     
     d = {'time': time, 'mapping': mapping, 'data': data, 'controlDecision': controlDecision}
@@ -773,7 +781,7 @@ def analysis(X, fis, forecasts, fids, mapping, controlStrategies=None, style='se
             anomalyIndices.append(ind)
     
     anomalyFids = [fids[ind] for ind in anomalyIndices]
-    
+    print(len(anomalyFids))
     anomalyDicts = []
     if anomalyFids:
         bar = progBar.Bar('Analyzing anomalies...', max=len(anomalyFids))
@@ -920,7 +928,7 @@ def generateJson2(request=False, outputFilename=None, plot=False, fake=False, lo
     #     X = json.loads(f.read())
     # ind = random.choice(range(len(X)))
     
-    trX = knnRegress(X, n_points=100)
+    trX = knnRegress(X, n_points=300)
     
     forecasts = forecast2(trX, data=X, fids=fids, S=0.5, L=0.5)
     
@@ -978,8 +986,8 @@ def generateJson2(request=False, outputFilename=None, plot=False, fake=False, lo
     #r = requests.post('http://192.168.101.21:18888/adapter/upload', data=json.dumps(jsdict))
     #r = requests.post('http://192.168.101.21:18888/adapter/upload', data={'pxeconfig': open(path / 'data' / 'fake-data' / outputFilename).read()})
     #with open(path / 'data' / 'fake-data' / outputFilename, 'rb') as f:
-    r = requests.post('http://192.168.101.21:18888/adapter/upload', files={'file': open(path / 'data' / 'fake-data' / outputFilename, 'rb')})
-    print(r.status_code, r.reason)
+    #r = requests.post('http://192.168.101.21:18888/adapter/upload', files={'file': open(path / 'data' / 'fake-data' / outputFilename, 'rb')})
+    #print(r.status_code, r.reason)
     return jsdict
 
 if __name__ == '__main__':

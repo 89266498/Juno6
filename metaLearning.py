@@ -290,7 +290,7 @@ def loadData():
             series = []
             for row in x:
                 if row != [None,None]:
-                    if row[1] >= 0:
+                    if row[1] > 0:
                         series.append(row)
                 else:
                     print('NONE NONE')
@@ -929,9 +929,9 @@ def generateJson2(request=False, outputFilename=None, plot=False, fake=False, lo
     #     X = json.loads(f.read())
     # ind = random.choice(range(len(X)))
     
-    trX = knnRegress(X, n_points=300)
+    trX = knnRegress(X, n_points=100)
     
-    forecasts = forecast2(trX, data=X, fids=fids, S=0.5, A=0.1, L=0.1)
+    forecasts = forecast2(trX, data=X, fids=fids, S=0.45, A=0.1, L=0.1)
     
     bar = progBar.Bar('Plotting forecasts...', max=len(I))
     for ind in I:

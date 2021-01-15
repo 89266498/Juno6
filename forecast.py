@@ -6,7 +6,10 @@ import random
 import progress.bar as progBar
 from sklearn.linear_model import BayesianRidge , LassoCV, RidgeCV
 from pathlib import Path
-
+import json
+from sklearn.multioutput import MultiOutputRegressor
+from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler
 path = Path('./')
 
 def knnRegress(X, n_points=300):
@@ -16,6 +19,7 @@ def knnRegress(X, n_points=300):
         T += [r[0] for r in x]
       
     T = list(set(T))
+    #print(T)
     minT = int(min(T))
     maxT = int(max(T))
     
@@ -227,43 +231,157 @@ def predict(X, n_points=200, **kwargs):
     trX = knnRegress(X, n_points=n_points)
     result = forecast2(trX, data=X, **kwargs)
     return result
+
+def loadJss():
+    print('Loading from Js...')
+    #path0, path1 = sys.argv[1], sys.argv[2]
+    #print('haha')
+    #print(path0, path1)
+    with open(path / 'data' / 'fake-data' / 'data_input.json', 'r') as f:
+        js = json.loads(f.read())
     
+    # with open(path0, 'r') as f:
+    #     js = json.loads(f.read())
+    
+    t = js['tick']
+    mapping = js['mapping']
+    data = js['data']
+    
+    # with open(path1, 'r') as f:
+    #     js = json.loads(f.read())
+
+    with open(path / 'data' / 'fake-data' / 'control_input.json', 'r') as f:
+        js = json.loads(f.read())
+    controlDecision = js
+    
+    d = {'time': t, 'mapping': mapping, 'data': data, 'controlDecision': controlDecision}
+    print('Saving JSON data...')
+    with open(path / 'data' / 'fake-data' / 'requested.json', 'w') as f:
+        f.write(json.dumps(d))
+        
+    return t, mapping, controlDecision, data
+
+def loadData():
+    with open(path / 'data' / 'fake-data' / 'requested.json', 'r') as f:
+        d = json.loads(f.read())
+    
+    mapping = d['mapping']
+    controlDecision = d['controlDecision']
+    data = d['data']
+    
+    fids = [row['id'] for row in data]
+    X = [row['series'] for row in data]
+    ts = []
+    Fids = []
+    for i, x in enumerate(X):
+        if x:
+            series = []
+            for row in x:
+                if row != [None,None]:
+                    if row[1] > 0:
+                        series.append(row)
+                else:
+                    print('NONE NONE')
+            #print(series[-5:])
+            ts.append(series)
+            Fids.append(fids[i])
+    
+    
+    return ts, Fids, mapping, controlDecision
+
+def multiForecast(X):
+    trainingLength = int(0.8*len(X[0])/2) #maximum trainingLength not exceeding len(X)/2
+    testLength = len(X[0]) - trainingLength*2
+    forecastLength = testLength
+    X = np.array(X)
+    
+    trXs = np.array([X[:, i:i+trainingLength, 1].flatten() for i in range(trainingLength)])
+    trYs = np.array([X[:, i+trainingLength, 1] for i in range(trainingLength)])
+    
+    #training 
+    
+    scalerX = StandardScaler().fit(trXs)
+    scalerY = StandardScaler().fit(trYs)
+    
+    
+    regr = MLPRegressor(hidden_layer_sizes=[100,100],  tol=1e-10, max_iter=20000,  learning_rate='adaptive', solver='adam', verbose=True).fit(scalerX.transform(trXs), trYs)
+    print('training done.')
+    #testing
+    teXs = [X[:, trainingLength:trainingLength+trainingLength, 1].flatten()]
+    
+    #teYs = [X[:, trainingLength+trainingLength, 1]]
+    ypreds = []
+    print('len X', len(X))
+    print('testLength', testLength)
+    for i in range(testLength):
+        print(i)
+        ypred = regr.predict(scalerX.transform(teXs))[0]
+        ypred = np.clip(scalerY.inverse_transform([ypred])[0], -np.inf, 10e6)
+        
+        print('ypred', list(ypred))
+        ypreds.append(ypred)
+        
+        teX = X[:, trainingLength:trainingLength+trainingLength, 1]
+        print(np.shape(teX))
+        #print(teX[0])
+        teX = list(teX[:, 1:].T)
+        teX.append(ypred)
+        #print(teX)
+        teX = np.array(teX).T
+        teXs = [teX.flatten()]
+        #print(teXs)
+        teXs = scalerX.transform(teXs)
+        print(teXs)
+    ypreds = np.array(ypreds).T
+    
+    return trXs, trYs
+    
+    
+    
+    ...
+
 
 #######################
 if __name__ == '__main__':
-    with open(path / 'price.txt', 'r') as f:
-        prices = [float(d.strip().split('\t')[-1].replace(',','')) for d in f.readlines()[1:] if d.strip()]
-    prices.reverse()
+    # with open(path / 'price.txt', 'r') as f:
+    #     prices = [float(d.strip().split('\t')[-1].replace(',','')) for d in f.readlines()[1:] if d.strip()]
+    # prices.reverse()
     
-    regr = BayesianRidge(normalize=True, fit_intercept=True).fit(np.array(range(len(prices))).reshape(-1,1), np.array(prices).reshape(-1,1))
-    p = lambda x: regr.predict(x, return_std=True)
-    coefs = regr.coef_
-    intercept = regr.intercept_
+    # regr = BayesianRidge(normalize=True, fit_intercept=True).fit(np.array(range(len(prices))).reshape(-1,1), np.array(prices).reshape(-1,1))
+    # p = lambda x: regr.predict(x, return_std=True)
+    # coefs = regr.coef_
+    # intercept = regr.intercept_
     
-    g = lambda x: p(x)/np.sqrt(np.sum(coefs**2)) - intercept/np.sqrt(np.sum(coefs**2)) + intercept
+    # g = lambda x: p(x)/np.sqrt(np.sum(coefs**2)) - intercept/np.sqrt(np.sum(coefs**2)) + intercept
     
-    pred, std = p(np.array(range(len(prices))).reshape(-1,1))
+    # pred, std = p(np.array(range(len(prices))).reshape(-1,1))
     
-    #plt.plot(prices, linewidth=1)
-    #plt.plot(pred)
-    #plt.plot(pred+3*std, c='orange', linewidth=1)
-    #plt.plot(pred-3*std, c='red', linewidth=1)
-    #plt.show()
+    # #plt.plot(prices, linewidth=1)
+    # #plt.plot(pred)
+    # #plt.plot(pred+3*std, c='orange', linewidth=1)
+    # #plt.plot(pred-3*std, c='red', linewidth=1)
+    # #plt.show()
     
-    upp = pred + 3*std
-    lwr = pred - 3*std
-    #print(pred)
-    y = np.multiply(3*std, np.tanh(np.divide((prices - pred), 3*std))) + pred
-    #y = prices
-    #y = np.clip(pred, upp, lwr)
-    #plt.plot(y, c='cornflowerblue', linewidth=1)
-    #plt.show()
-    y=prices
-    data = [list(zip(range(len(y)), y))]
-    result = predict(data, S=0.1, A=0.9, L=1, train=9.99/10)
+    # upp = pred + 3*std
+    # lwr = pred - 3*std
+    # #print(pred)
+    # y = np.multiply(3*std, np.tanh(np.divide((prices - pred), 3*std))) + pred
+    # #y = prices
+    # #y = np.clip(pred, upp, lwr)
+    # #plt.plot(y, c='cornflowerblue', linewidth=1)
+    # #plt.show()
+    # y=prices
+    # data = [list(zip(range(len(y)), y))]
+    # result = predict(data, S=0.1, A=0.9, L=1, train=9.99/10)
         
-        
+    loadJss()    
     
+    ts, Fids, mapping, controlDecision = loadData()
+
+    
+    X = knnRegress(ts, n_points=2*max([len(d) for d in ts]))
+    
+    trXs, trYs = multiForecast(X)
     
     
     

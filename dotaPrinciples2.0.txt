@@ -78,7 +78,7 @@ Enchantress is not a natural pusher/farmer, he is also a pseudo-carry, so enchan
 
 4.2. Tier1 ward places typically is the highest point in the area which gives the maximum vision coverage, but they are easily dewarded in most games. Tier2 wards are at the chokepoints instead, typically gives a smaller coverage of vision, but can give key information to how enemies are relocating. Tier2 wards also get dewarded less frequently.
 
-5. (The Role of Tower): 1) Tower gives vision, 2) Tower represents a TP point, reinforcing defense from enemy, 3) Tower is like a big creep, has its own creep-agro, 4) Tower can be fortified, which can increase its own defense. So a tower represents a stronghold of defense. By removing it, it removes vision, tp point, and other defensive capabilities of enemy in that area. This gives map control around that space where tower was.
+5. (The Role of Tower): 1) Tower gives vision, 2) Tower represents a TP point, reinforcing defense from enemy, 3) Tower is like a big creep, has its own creep-agro, 4) Tower can be fortified, which can increase its own defense. So a tower represents a stronghold of defense. 5) Tower is also a TP point for launching attacks. By having Tier 1 tower up, I can tp there and start attacking from there, traveling less distance, forming offense faster. By removing it, it removes vision, tp point, and other offensive & defensive capabilities of enemy in that area. This gives map control around that space where tower was.
 
 6. The strategy of DotA, in essence: Map Control -> Outfarm opponent -> Win Teamfight.
 
@@ -355,4 +355,55 @@ first pick windranger. If Windranger is banned, pick Viper. If Viper is banned, 
 
 28. I'll do this: copy exactly the builds used by pros as of current meta. If meta changes, build changes, I'll copy that change exactly.
 
+29. I spammed Lycan and get to MMR 1610 (Crusader I), highest 1670. If I can win 3 more games in a row, I can reach Crusader II. But right now, I'm stuck at around 1640 with 50% winrate.
 
+30. I spammed Lycan and got 6 wins in a row. I've reached MMR 1790, Crusader II. I mostly first pick Lycan and opt to go mid, unless if there's another teammate that can go mid better, I go safelane. I almost always try to avoid offlane, because Lycan is such a bad offlane in laning stage, he can't apply strong enough aggression to enemy's carry, and he has issues with surviving the kill lane. The key to Lycan's success is in the laning stage. Lycan's chances of winning the game is high if he has a good laning stage where he can farm and hit his necrobook timing. Getting the farm is so important to the extent where more regen, armor, stats or wand are needed in order to tank up, walk up and apply creep aggro/lane control techniques, and get last hits.
+
+In mid: buy more regen (salves, tangos, etc.), against enemy mid that just hits me (invoker, QoP, etc.) buy RoP for armor. Against nukers (zeus) buy stick. Against burst, I can try raindrop, or bracer. At min 3:50, send two wolves to deny runes. I can further try to deny bounty rune at min 5, and deny power runes at min 6. Controlling creep equilibrium on my high ground is important. I can agro pull the creeps to sideway to prevent creeps from resetting into low ground, I can also abuse that to create double wave and dive them under tower when level 6. I can try to pull the lane back to highground when it is on low ground. When the lane is on their highground, I can push out that wave using wolves, and farm side camps.
+
+In safelane, it requires support to do his job to zone out enemy offlaner or pos 4, or pull creeps to maintain equilibrium. This relies more on teammates, so there's more ways that can go wrong. Try to get levels and last hits, and at level 4, I can buy some mana items, and go jungle, and let support take the XP in the safelane. Tell the support to soak XP and stay safe. Then at level 6, I go join my offlaner or mid to gank enemy's safelane or midlane. 
+
+31. In several Lycan games where I lost, I concluded that these are some main reasons why I lost:
+
+31.1. Going to the wrong lane (usually offlane) and getting zoned out or killed multiple times by their kill lane. Lycan cannot apply strong enough aggression, so he needs a babysitter against dual lane. Be careful of positioning and creep equilibrium. Sometimes pos 4 babysitter cannot do his job well enough because I'm not aggressive, so he leaves lane, leaving me vulnereable, so I'm forced to jungle, giving the enemy carry more farm and XP, increasing my difficulty in closing the game fast. Sometimes my positioning is bad, I get stunned and burst from full to zero. Solution: going to the right lane where I can get the most farm safely, usually the midlane, sometimes safelane, seldom in offlane.
+
+32.2. Diving tower at level 6 when enemy is alone and full health. Or Diving tower when the creep wave is not under their tower, so my wolves die quickly to their tower. Or diving tower without necrobook. Even though he's alone, but his teammates can TP-in to save him while he jukes in the trees, and I'll find myself in trouble soon enough. Midlane has less trees to juke, so midlane is better for diving. Solution: Shove the wave under their tower, and only dive tower when I have necro book or at least another teammate helping or the loner has half HP, remember to switch tower agro when I find myself getting hit by tower. If enemy TP, I should back off unless I can quickly kill the loner, and kill the next one. 
+
+32.3. Solo-diving highground for tower or lone hero. Causes me to die easily when enemy can quickly reinforce by tp or glyph, if I get killed, sometimes they can push out waves long enough before I respawn, thus dragging the game. Solution: simply push out waves under their highground, hit tower to force glyph, and backoff. I can just send my units to hit towers given that my aura is now global. In the late-game, I'm a win condition because I can splitpush and rat. I should not die.
+
+32.3. Not buying BKB when they have chain stuns (pangolier's ulti). Solution: before BKB, I should just send my units to attack, and I just kite around at a safe distance, but be ready to attack with my main hero if there's opportunity for it. This is a form of soft-committing.
+
+32.4. Getting dumpstered in the midlane because I don't control creep equilibrium, or pull creep at the wrong time when the creep line is already on my side. Solution: control creep line using aggro tricks. 
+
+32.5. In the midlane, not buying enough regen or tanky items to survive right clicks or harass. Solution: buy more salves, tangos, stats, RoP, wand more than what is needed to ensure a good lane. I may hit my timing slightly slower, but I can tank up and get last hits better and die less. This will pay itself off.
+
+32.6. In the midlane, I died to rotations. Solution: think beforehand who among their pos 4 or 5 would most likely come to gank me, and place a ward at the right location on the river. When the wave is on their high ground, farm side camps. 
+
+32.7. Allowing enemy mid to bottle up runes and thus sustain his aggression on me or on my teammates. The game then snowballed hard from there. Solution: I should send my wolves before the runes spawn, to deny runes as many times as possible.
+
+32.8. Fighting when the enemies are stronger at teamfighting. Solution: identify their power spikes, and avoid fighting them when they are strong. Just steal their towers. Before the game, think about all possible ways (or combos or items) that the enemies can kill me or prevent me from doing my job.
+
+
+33. Before the game starts, I should ask these questions:
+
+33.1. What are my jobs and default strategy in this game? (pushing, ratting, waveclear, ganker, farmer, teamfighting, damage dealer, backline killer, disabler, utility, healer, tanker, etc.)
+
+33.2. Considering their default gameplay, strategy and jobs, how can they prevent me from doing my jobs (inhibit me) or threaten me? What are my strategy of gameplay and itemization against that?
+
+33.3. Which lane should I go to?
+
+33.4. Who should I avoid in teamfight? Who should I be careful of when they are missing? Who should I be around with? In teamfights, who should I kill/disable/damage/cast my spells on?
+
+33.5. Who in the enemies can I inhibit or threaten? How will they solve that problem?
+
+34. I'm on Lycan 7-win streak, reaching 1820 MMR. The last game was tough against Axe and Spectre, but we're able to win eventually by pushing. I still made the 'solo-diving highground' mistake, and died a few times. Aghanim was still quite mediocre in my opinion, teammates don't necessarily know how to use it. Shard showed its impact when the shard wolves created double waves on both side lanes that push up to highground and automatically destroyed rax, forcing Skywrath to TP defend. He even almost died to the shard wolf!
+
+35. Sometimes from mid game at around 25 min, some enemy supports will buy survivable items such as linken, lotus orb, ghost scepter, euls, force staff etc. Killing the supports becomes harder, that's why diving highground is more dangerous, especially when I'm the win-condition through ratting. In teamfights, when I charge at the backline supports, usually there'll be other his other support teammates helping him, so I've created a situation where 2 or 3 enemies supports are dealing with just me in their backline, while the rest of my 4 teammates are engaging with their 2 or 3 cores in the frontline. This is advantageous as long as I don't die to their supports, and I usually wont die, unless they have stuns, chain-stuns or aoe-stuns, or Kunkka, something like that. That's why I need a BKB to charge their backline, forcing a few of them to react to me defensively, and this splits up their formation.
+
+36. I'm still spamming lycan, winning 80% of the games, now I'm at 1980 MMR, crusader III. I've found that by analyzing the replay of every game that I just finished (especially those lost games), I can usually identify mistakes made by myself, my teammates and opponents. I can then improve faster, maintaining high winrate as I climb. That is, I have to improve my gameplay as fast as I can gain MMR. Also, watching replays of high MMR spammer of a hero is very important, because I can learn some new tricks that I wouldn't know, I also get exposed to many more difficult matchups. I can also learn to think like him, especially when I try to answer why a pro does a move that would normally be different from what I would do in similar situations.
+
+37. I notice that 23Savage (the Lycan Spammer in Pro games, 11k MMR) buys Orchid after Necro in half of its games, especially against spell casters and mobile heroes such as Ember Spirits, Storms, PA, etc. I can also try Nullifier after Abbysal Blade. Against Illusions, I can buy Radiance.
+
+38. I'm now having 50% winrate at 1940 MMR (Crusader III). I'm still spamming Lycan. At this MMR, opponents are good enough to counterpick me. If I first pick, I'll get my desired lane, but having to play against 4 counters. If I pick in the 2nd phase, I may or may not get my desired lane, and I'm still playing against 3 counters. Lycan is further nerfed a bit in 7.28b, so playing him against counters is more difficult. But I notice that, in my recent 3 games where I'm playing against counters (not necessarily against lane counter), I won my lane hard. The problem has always been my counters getting fat enough until they start to be a real threat to me (say, allowing Luna to farm safely bottom because I didn't gank her, I ganked her offlane BS and Axe instead). Later I realized I should have ganked Luna because Luna is her win-condition.  Safelane tower is also easier to take because it is far away from the midlane, so Riki and Axe would have to TP safelane to defend, forcing TPs. I can then backoff and have them stuck in that safelane area. Riki was having a badlane, Axe still needs to farm, so they will probably jungle. I'm putting three farmers on safelane, lowering their efficiencies, while I can TP top and push their top lane knowing that they have tped bottom. They might get our offlane, but offlane is what we can sacrifice.
+
+39. My winrate on Lycan drops, it could be due to the changes in patch 7.28b. I should play unranked and get myself familiarized with the new changes, meanwhile letting pros experimenting and creating some new Lycan metas. Then I'll just copy that successful meta.
